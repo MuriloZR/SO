@@ -76,7 +76,7 @@ const char *console_saida(disp_t *d, int *tamanho);
 void disp_estado_disco(disp_t *d, int unidade, bool *ocupado, bool *erro, int *ticks_restantes);
 uint16_t disp_relogio_contador(disp_t *d);
 uint16_t disp_relogio_limite(disp_t *d);
-uint16_t disp_random_device(disp_t *d);
+uint16_t disp_time_unit(disp_t *d);
 uint8_t disp_mascara_interrupcoes(disp_t *d);
 
 #endif

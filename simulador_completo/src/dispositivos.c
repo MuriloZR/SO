@@ -36,7 +36,7 @@ struct dispositivos {
   uint16_t rel_contador, rel_limite;
 
   // dispositivo de numeros aleatorios
-  uint16_t random_device;
+  uint16_t time_unit;
 
   // controlador de interrupções
   uint8_t mascara; // porta 0030
@@ -224,8 +224,8 @@ uint8_t disp_le_byte(disp_t *d, uint16_t porta)
     case PORTA_RELOGIO_CONT_BAIXO: return (uint8_t)(d->rel_contador & 0xFF);
     case PORTA_RELOGIO_LIM_ALTO: return (uint8_t)(d->rel_limite >> 8);
     case PORTA_RELOGIO_LIM_BAIXO: return (uint8_t)(d->rel_limite & 0xFF);
-    case PORTA_RANDOM_DEVICE_ALTO: return (uint8_t)(d->random_device >> 8);
-    case PORTA_RANDOM_DEVICE_BAIXO: return (uint8_t)(d->random_device & 0xFF);
+    case PORTA_RANDOM_DEVICE_ALTO: return (uint8_t)(d->time_unit >> 8);
+    case PORTA_RANDOM_DEVICE_BAIXO: return (uint8_t)(d->time_unit & 0xFF);
     case PORTA_CTRL_INTERRUPCOES: return d->mascara;
     default: return 0;
   }
@@ -253,8 +253,8 @@ void disp_escreve_byte(disp_t *d, uint16_t porta, uint8_t valor)
     case PORTA_RELOGIO_CONT_BAIXO: d->rel_contador = (uint16_t)((d->rel_contador & 0xFF00) | valor); break;
     case PORTA_RELOGIO_LIM_ALTO: d->rel_limite = (uint16_t)((d->rel_limite & 0x00FF) | (valor << 8)); break;
     case PORTA_RELOGIO_LIM_BAIXO: d->rel_limite = (uint16_t)((d->rel_limite & 0xFF00) | valor); break;
-    case PORTA_RANDOM_DEVICE_ALTO: d->random_device = (uint16_t)((d->random_device & 0x00FF) | (valor << 8)); break;
-    case PORTA_RANDOM_DEVICE_BAIXO: d->random_device = (uint16_t)((d->random_device & 0xFF00) | valor); break;
+    case PORTA_RANDOM_DEVICE_ALTO: d->time_unit = (uint16_t)((d->time_unit & 0x00FF) | (valor << 8)); break;
+    case PORTA_RANDOM_DEVICE_BAIXO: d->time_unit = (uint16_t)((d->time_unit & 0xFF00) | valor); break;
     case PORTA_CTRL_INTERRUPCOES: d->mascara = valor; break;
     default: break;
   }
@@ -278,9 +278,7 @@ void disp_tick(disp_t *d)
     }
   }
 
-  d->random_device = (uint16_t)(time(0) % 0x8000);
-  //disp_escreve_byte(d, 0x0024, d->random_device >> 8);
-  //disp_escreve_byte(d, 0x0025, d->random_device);
+  d->time_unit = (uint16_t)(time(0) % 0x8000);
 }
 
 int disp_interrupcao_pendente(disp_t *d)
@@ -298,5 +296,5 @@ void disp_confirma_interrupcao(disp_t *d, int numero)
 
 uint16_t disp_relogio_contador(disp_t *d) { return d->rel_contador; }
 uint16_t disp_relogio_limite(disp_t *d) { return d->rel_limite; }
-uint16_t disp_random_device(disp_t *d) { return d->random_device; }
+uint16_t disp_time_unit(disp_t *d) { return d->time_unit; }
 uint8_t disp_mascara_interrupcoes(disp_t *d) { return d->mascara; }

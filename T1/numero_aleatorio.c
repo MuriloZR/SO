@@ -34,9 +34,6 @@ int rand() {
 int main() {
     set_clock_max_main(0x7FFF);
     srand(retorna_time());
-    puts_sem_n("time: ");
-    print_int(retorna_time());
-    putchar('\n');
     for (int i = 0; i < 1; i++) {
         puts_sem_n("rand: ");
         print_int((rand()));
