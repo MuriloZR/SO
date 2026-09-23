@@ -31,13 +31,14 @@ com o compilador. Cada simplificação abaixo está documentada com o motivo.
 6. [Operadores](#operadores)
 7. [Comandos](#comandos)
 8. [Funções](#funções)
-9. [Pré-processador](#pré-processador)
-10. [Biblioteca padrão (`mancha.h`)](#biblioteca-padrão-manchah)
-11. [O que não é suportado](#o-que-não-é-suportado)
-12. [Convenção de chamada e organização da memória](#convenção-de-chamada-e-organização-da-memória)
-13. [Exemplos (`exemplos/`)](#exemplos-exemplos)
-14. [Validação](#validação)
-15. [Organização do código](#organização-do-código)
+9. [Ponteiros de função](#ponteiros-de-função)
+10. [Pré-processador](#pré-processador)
+11. [Biblioteca padrão (`mancha.h`)](#biblioteca-padrão-manchah)
+12. [O que não é suportado](#o-que-não-é-suportado)
+13. [Convenção de chamada e organização da memória](#convenção-de-chamada-e-organização-da-memória)
+14. [Exemplos (`exemplos/`)](#exemplos-exemplos)
+15. [Validação](#validação)
+16. [Organização do código](#organização-do-código)
 
 ## Build e uso
 
@@ -79,6 +80,7 @@ Fora isso, `mcc` não impõe nenhum nome especial.
 | `T *` | 2 bytes | ponteiro para qualquer tipo, inclusive `T **` |
 | `T nome[N]` | `N * sizeof(T)` | array de tamanho fixo, `N` constante |
 | `struct Nome` | soma dos membros | sem preenchimento/alinhamento (ver [Structs](#structs)) |
+| `RET (*nome)(...)` | 2 bytes | ponteiro de função (ver [Ponteiros de função](#ponteiros-de-função)) |
 
 Não existem `float`/`double`, `long`/`short`, `unsigned`/`signed`,
 `enum`, `union` nem `typedef` -- ver a lista completa em
@@ -92,6 +94,10 @@ são caracteres/bytes de dados, sem sinal é a escolha mais previsível).
 `sizeof` é suportado com um tipo (`sizeof(int)`, `sizeof(struct Ponto)`,
 `sizeof(char*)`) ou uma expressão (`sizeof(x)`, `sizeof(*p)`) -- sempre
 entre parênteses, e nunca avalia a expressão (assim como em C de verdade).
+`sizeof` de um ponteiro de função só funciona na forma de expressão
+(`sizeof(fp)`, `fp` já declarado) -- a forma de tipo abstrato
+(`sizeof(int (*)(int))`) não é suportada, mesma restrição de
+[Ponteiros de função](#ponteiros-de-função) sobre casts.
 
 ## Declarações e inicializadores
 
@@ -281,13 +287,113 @@ int fatorial(int n)                      // recursão funciona normalmente
   mas são obrigatórios na definição.
 - Uma função sem `return` explícito no fim do corpo simplesmente retorna
   (com um valor de retorno indefinido, se não for `void` -- como em C).
-- Não há ponteiros para função, nem funções variádicas (sem `...`) --
-  por isso não existe um `printf(fmt, ...)` de verdade; veja
-  `print_int`/`print_hex`/`puts` na biblioteca padrão.
+- Não há funções variádicas (sem `...`) -- por isso não existe um
+  `printf(fmt, ...)` de verdade; veja `print_int`/`print_hex`/`puts` na
+  biblioteca padrão. Ponteiros para função são suportados -- ver a
+  próxima seção.
 - Todo símbolo (função ou variável global) tem ligação externa (não há
   `static` para restringir um nome a um arquivo) -- evite repetir nomes
   de função/variável global entre arquivos `.c` diferentes que serão
   montados juntos.
+
+## Ponteiros de função
+
+```c
+int soma(int a, int b) { return a + b; }
+int subtrai(int a, int b) { return a - b; }
+
+int (*op)(int, int);     // variável: ponteiro para função(int,int) retornando int
+op = soma;                  // o nome de uma função, usado sem "()", vale o
+                              // ENDEREÇO dela (mesma ideia de um array
+                              // decaindo pra ponteiro fora de "[]")
+print_int(op(3, 4));           // chamada indireta: 7
+op = subtrai;
+print_int(op(10, 4));            // 6
+print_int((*op)(10, 4));           // "(*op)(...)" é equivalente a "op(...)"
+                                      // (desreferenciar um ponteiro de função
+                                      // não faz nada -- ele já É o endereço)
+```
+
+**Tabela de despacho** (array de ponteiros de função, indexado por um
+código de operação) -- o mesmo padrão usado para um vetor de
+interrupções ou uma tabela de chamadas de sistema:
+
+```c
+int multiplica(int a, int b) { return a * b; }
+
+int (*tabela[3])(int, int) = { soma, subtrai, multiplica };
+
+for (i = 0; i < 3; i++) {
+    print_int(tabela[i](6, 2));     // 8 4 12
+}
+```
+
+**Callback** (ponteiro de função como parâmetro) e **ponteiro de função
+como membro de struct** (uma "tabela de comandos") também são
+suportados, e usam exatamente a mesma sintaxe de declarador:
+
+```c
+void aplica(int (*f)(int, int), int a, int b) { print_int(f(a, b)); }
+aplica(soma, 20, 5);       // 25
+
+struct Comando { char letra; int (*executa)(int, int); };
+struct Comando comandos[2] = { { 'S', soma }, { 'D', subtrai } };
+print_int(comandos[0].executa(8, 3));     // 11
+```
+
+Veja `exemplos/ponteiros_funcao.c` para um exemplo com os quatro padrões
+juntos.
+
+### O que é suportado
+
+- Declarar uma variável, parâmetro, membro de struct ou array de
+  ponteiros de função: `TIPO (*nome)(parâmetros)` e
+  `TIPO (*nome[N])(parâmetros)`.
+- Atribuir o nome de uma função (sem `()`) a uma variável de ponteiro de
+  função, a um elemento de array, a um membro de struct, ou passá-lo
+  como argumento -- o nome "decai" para o endereço da função, do mesmo
+  jeito que um array decai para ponteiro do primeiro elemento.
+- Chamar através de qualquer expressão de tipo "ponteiro de função":
+  uma variável (`fp(...)`), `(*fp)(...)`, um elemento de array
+  (`tabela[i](...)`), um membro de struct (`s.executa(...)` ou
+  `p->executa(...)`) -- todas geram uma chamada indireta (`call rN`, o
+  endereço calculado em um registrador), diferente de uma chamada direta
+  pelo nome da função (`minhafuncao(...)`, que gera `call rotulo`, sem
+  indireção).
+- Inicializador de variável **global** de ponteiro de função (ou array/
+  struct contendo um), com o nome de uma função já declarada -- inclusive
+  já com um protótipo só, cujo corpo é definido mais adiante no arquivo:
+
+  ```c
+  void processa(void);           // protótipo: já basta pra usar o nome abaixo
+  void (*gancho)(void) = processa;  // a ordem que importa é a do PROTÓTIPO,
+                                       // não a de onde "processa" é definida
+  void processa(void) { ... }         // pode vir depois, sem problema
+  ```
+- Comparação (`fp == 0`, `fp != outra_funcao`) e a checagem de aridade
+  (número de argumentos) numa chamada indireta, feita a partir do tipo
+  declarado do ponteiro (`int (*)(int,int)` exige exatamente 2
+  argumentos, por exemplo).
+
+### O que não é suportado
+
+- **`&minhafuncao`** (tirar o endereço de uma função explicitamente com
+  `&`): use o nome sozinho (`minhafuncao`), que já vale o endereço --
+  `&` sobre uma função dá erro de compilação.
+- **Ponteiro de ponteiro de função** (`int (**fp)(int)`) e **função
+  retornando ponteiro de função** (`int (*escolhe(int))(int)`): só um
+  nível de indireção é suportado. Sem `typedef` (que o mcc também não
+  suporta), essas formas já são pouco práticas de escrever mesmo em C de
+  verdade.
+- **Cast para tipo de ponteiro de função** (`(int (*)(int)) endereco`):
+  atribua o valor a uma variável do tipo certo primeiro
+  (`int (*fp)(int); fp = ...; fp(x);`) em vez de um cast inline.
+- Inicializador de ponteiro de função em variável **global** com algo
+  além do nome direto de uma função (ou `0`) -- mesma restrição que
+  qualquer outro inicializador global, que precisa ser resolvível em
+  tempo de montagem (ver [Declarações e inicializadores](#declarações-e-inicializadores)).
+  Em variável **local**, qualquer expressão vale, exatamente como para
+  os outros tipos escalares.
 
 ## Pré-processador
 
@@ -379,7 +485,10 @@ seção acima):
 - `typedef`.
 - `static`, `extern`, `const`, `volatile`, `register` (nenhum
   qualificador de armazenamento ou de tipo).
-- Funções variádicas (`...`), ponteiros para função.
+- Funções variádicas (`...`). Ponteiros para função **são** suportados
+  (ver [Ponteiros de função](#ponteiros-de-função)), com as restrições
+  próprias listadas naquela seção (sem `&funcao`, sem múltiplos níveis
+  de indireção, sem cast para tipo de ponteiro de função).
 - `switch`/`case`, `goto`, rótulos.
 - Operador vírgula fora de lista de argumentos.
 - Passagem/retorno de struct por valor (use ponteiro).
@@ -418,6 +527,12 @@ faz):
 - **Valor de retorno**: em `r0`.
 - **Quem desempilha os argumentos**: quem chama (`add sp, N` logo depois
   do `call`), não a função chamada.
+- **Chamada indireta** (através de um ponteiro de função): os argumentos
+  são empilhados do mesmo jeito, mas em vez de `call rotulo` o
+  compilador avalia a expressão do ponteiro por último (depois de todos
+  os argumentos já empilhados) e emite `call r0` -- o Mancha aceita
+  qualquer modo de endereçamento como alvo de `call`, inclusive um
+  registrador (ver `mancha.pdf`, formato especial da instrução).
 - **Variáveis locais**: todo o quadro da função é alocado de uma vez no
   prólogo (o Mancha não tem uma instrução de "alocar N bytes agora"), em
   `(bp-2)`, `(bp-4)`, etc., na ordem de declaração -- mesmo variáveis
@@ -465,6 +580,9 @@ faz):
   estático de nós (sem `malloc`), e um array multidimensional (matriz).
 - **`eco.c`**: `getchar()`/espera ocupada -- interativo, use o comando de
   operador `E<texto>` do simulador para digitar uma linha.
+- **`ponteiros_funcao.c`**: ponteiro de função (variável, tabela de
+  despacho, callback, membro de struct) -- ver
+  [Ponteiros de função](#ponteiros-de-função).
 
 ## Validação
 
@@ -491,6 +609,12 @@ operador real digitando comandos no simulador de verdade
   interface quanto interativamente via `tmux` (comando `E` do
   simulador) -- eco de `"Ola mundo"` seguido de `"!"`, pára após 884
   instruções, batendo exatamente entre os dois métodos. ✓
+- `ponteiros_funcao.mob`: variável de ponteiro de função (`soma(3,4)=7`,
+  `subtrai(10,4)=6`), tabela de despacho (`8 4 12`), callback
+  (`aplica(soma,20,5)=25`, `aplica(multiplica,20,5)=100`), struct com
+  ponteiro de função inicializada com chaves aninhadas dentro de um
+  array (`S=11 D=5 M=24`) -- todos conferidos à mão, testado no
+  executor sem interface e interativamente no simulador real. ✓
 
 Dois bugs reais de implementação foram encontrados e corrigidos durante a
 validação (documentados com mais detalhe no comentário de
@@ -506,14 +630,24 @@ validação (documentados com mais detalhe no comentário de
    por causa de lixo no byte alto -- corrigido mascarando com `and r0,
    255` depois de toda carga de um byte.
 
+Nenhum bug novo apareceu ao adicionar suporte a ponteiros de função --
+o design (representar um ponteiro de função como um `T_PONTEIRO`
+apontando para um novo `T_FUNCAO`, em vez de inventar um mecanismo
+separado) fez a maior parte da máquina de tipos existente (decaimento de
+array, indexação, membro de struct, inicializador global) funcionar sem
+alterações, então a superfície de código realmente nova (parsing do
+declarador `(*nome)(...)`, detecção de chamada direta/indireta,
+`ld r0, rótulo` para decair uma função nua) era pequena o bastante para
+sair certa da primeira vez nos testes.
+
 ## Organização do código
 
 ```
 src/
   pre.h/.c        pré-processador (comentários, #include, #define, #if...)
   lexer.h/.c      tokenizador (opera sobre a saída já expandida do pré-processador)
-  tipos.h/.c       sistema de tipos (int/char/void/ponteiro/array/struct) e
-                    tabela de structs
+  tipos.h/.c       sistema de tipos (int/char/void/ponteiro/array/struct/
+                    ponteiro de função) e tabela de structs
   simbolos.h/.c     tabela de símbolos globais e pilha de escopos locais
   parser.c          o compilador propriamente dito: parser recursivo-descendente
                       que gera pequenas árvores por expressão (resolve lvalue/

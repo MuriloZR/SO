@@ -8,7 +8,7 @@
 #include "tipos.h"
 #include <stdbool.h>
 
-#define SIMB_MAX_PARAMS 16
+#define SIMB_MAX_PARAMS TIPO_MAX_PARAMS
 
 typedef enum { SIMB_GLOBAL, SIMB_LOCAL, SIMB_FUNCAO } categoria_simbolo_t;
 

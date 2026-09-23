@@ -100,7 +100,7 @@ _f_getchar:
 	call _f_mancha_in
 	add sp, 2
 	st r0, (bp+-2)
-_L3d8278c9_4:
+_L5c372334_4:
 	ld r0, (bp+-2)
 	push r0
 	ld r0, 2
@@ -112,21 +112,21 @@ _L3d8278c9_4:
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc eq, _L3d8278c9_6
+	jmpc eq, _L5c372334_6
 	ld r0, 0
-	jmp _L3d8278c9_7
-_L3d8278c9_6:
+	jmp _L5c372334_7
+_L5c372334_6:
 	ld r0, 1
-_L3d8278c9_7:
+_L5c372334_7:
 	cmp r0, 0
-	jmpc eq, _L3d8278c9_5
+	jmpc eq, _L5c372334_5
 	ld r0, 2
 	push r0
 	call _f_mancha_in
 	add sp, 2
 	st r0, (bp+-2)
-	jmp _L3d8278c9_4
-_L3d8278c9_5:
+	jmp _L5c372334_4
+_L5c372334_5:
 	ld r0, 1
 	push r0
 	call _f_mancha_in
@@ -140,7 +140,7 @@ _L3d8278c9_5:
 _f_puts:
 	push bp
 	ld bp, sp
-_L3d8278c9_12:
+_L5c372334_12:
 	ld r0, (bp+4)
 	ld r1, r0
 	ldb r0, (r1)
@@ -150,14 +150,14 @@ _L3d8278c9_12:
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc ne, _L3d8278c9_14
+	jmpc ne, _L5c372334_14
 	ld r0, 0
-	jmp _L3d8278c9_15
-_L3d8278c9_14:
+	jmp _L5c372334_15
+_L5c372334_14:
 	ld r0, 1
-_L3d8278c9_15:
+_L5c372334_15:
 	cmp r0, 0
-	jmpc eq, _L3d8278c9_13
+	jmpc eq, _L5c372334_13
 	ld r0, (bp+4)
 	ld r1, r0
 	ldb r0, (r1)
@@ -172,8 +172,8 @@ _L3d8278c9_15:
 	pop r0
 	add r0, r1
 	st r0, (bp+4)
-	jmp _L3d8278c9_12
-_L3d8278c9_13:
+	jmp _L5c372334_12
+_L5c372334_13:
 	ld r0, 10
 	push r0
 	call _f_putchar
@@ -195,35 +195,35 @@ _f_print_int:
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L3d8278c9_31
+	jmpc lt, _L5c372334_31
 	ld r0, 0
-	jmp _L3d8278c9_32
-_L3d8278c9_31:
+	jmp _L5c372334_32
+_L5c372334_31:
 	ld r0, 1
-_L3d8278c9_32:
+_L5c372334_32:
 	cmp r0, 0
-	jmpc eq, _L3d8278c9_33
+	jmpc eq, _L5c372334_33
 	ld r0, 1
 	st r0, (bp+-12)
 	ld r0, (bp+4)
 	xor r0, -1
 	add r0, 1
 	st r0, (bp+4)
-_L3d8278c9_33:
+_L5c372334_33:
 	ld r0, (bp+4)
 	push r0
 	ld r0, 0
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc eq, _L3d8278c9_34
+	jmpc eq, _L5c372334_34
 	ld r0, 0
-	jmp _L3d8278c9_35
-_L3d8278c9_34:
+	jmp _L5c372334_35
+_L5c372334_34:
 	ld r0, 1
-_L3d8278c9_35:
+_L5c372334_35:
 	cmp r0, 0
-	jmpc eq, _L3d8278c9_36
+	jmpc eq, _L5c372334_36
 	ld r0, bp
 	add r0, -8
 	push r0
@@ -237,22 +237,22 @@ _L3d8278c9_35:
 	stb r0, (r1)
 	ld r0, 1
 	st r0, (bp+-10)
-_L3d8278c9_36:
-_L3d8278c9_37:
+_L5c372334_36:
+_L5c372334_37:
 	ld r0, (bp+4)
 	push r0
 	ld r0, 0
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc gt, _L3d8278c9_39
+	jmpc gt, _L5c372334_39
 	ld r0, 0
-	jmp _L3d8278c9_40
-_L3d8278c9_39:
+	jmp _L5c372334_40
+_L5c372334_39:
 	ld r0, 1
-_L3d8278c9_40:
+_L5c372334_40:
 	cmp r0, 0
-	jmpc eq, _L3d8278c9_38
+	jmpc eq, _L5c372334_38
 	ld r0, bp
 	add r0, -8
 	push r0
@@ -292,31 +292,31 @@ _L3d8278c9_40:
 	pop r0
 	div r0, r1
 	st r0, (bp+4)
-	jmp _L3d8278c9_37
-_L3d8278c9_38:
+	jmp _L5c372334_37
+_L5c372334_38:
 	ld r0, (bp+-12)
 	cmp r0, 0
-	jmpc eq, _L3d8278c9_41
+	jmpc eq, _L5c372334_41
 	ld r0, 45
 	push r0
 	call _f_putchar
 	add sp, 2
-_L3d8278c9_41:
-_L3d8278c9_42:
+_L5c372334_41:
+_L5c372334_42:
 	ld r0, (bp+-10)
 	push r0
 	ld r0, 0
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc gt, _L3d8278c9_44
+	jmpc gt, _L5c372334_44
 	ld r0, 0
-	jmp _L3d8278c9_45
-_L3d8278c9_44:
+	jmp _L5c372334_45
+_L5c372334_44:
 	ld r0, 1
-_L3d8278c9_45:
+_L5c372334_45:
 	cmp r0, 0
-	jmpc eq, _L3d8278c9_43
+	jmpc eq, _L5c372334_43
 	ld r0, (bp+-10)
 	push r0
 	ld r0, 1
@@ -336,8 +336,8 @@ _L3d8278c9_45:
 	push r0
 	call _f_putchar
 	add sp, 2
-	jmp _L3d8278c9_42
-_L3d8278c9_43:
+	jmp _L5c372334_42
+_L5c372334_43:
 	ld sp, bp
 	pop bp
 	ret
@@ -345,25 +345,25 @@ _f_print_hex:
 	push bp
 	ld bp, sp
 	sub sp, 6
-	ld r0, _str3d8278c9_1
+	ld r0, _str5c372334_1
 	st r0, (bp+-2)
 	ld r0, 12
 	st r0, (bp+-4)
-_L3d8278c9_50:
+_L5c372334_50:
 	ld r0, (bp+-4)
 	push r0
 	ld r0, 0
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc ge, _L3d8278c9_52
+	jmpc ge, _L5c372334_52
 	ld r0, 0
-	jmp _L3d8278c9_53
-_L3d8278c9_52:
+	jmp _L5c372334_53
+_L5c372334_52:
 	ld r0, 1
-_L3d8278c9_53:
+_L5c372334_53:
 	cmp r0, 0
-	jmpc eq, _L3d8278c9_51
+	jmpc eq, _L5c372334_51
 	ld r0, (bp+4)
 	push r0
 	ld r0, (bp+-4)
@@ -394,8 +394,8 @@ _L3d8278c9_53:
 	pop r0
 	sub r0, r1
 	st r0, (bp+-4)
-	jmp _L3d8278c9_50
-_L3d8278c9_51:
+	jmp _L5c372334_50
+_L5c372334_51:
 	ld sp, bp
 	pop bp
 	ret
@@ -403,7 +403,7 @@ _L3d8278c9_51:
 .data
 
 ; ----- literais de string -----
-_str3d8278c9_0:
+_str5c372334_0:
 	.db 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 0
-_str3d8278c9_1:
+_str5c372334_1:
 	.db 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 65, 66, 67, 68, 69, 70, 0

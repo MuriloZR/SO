@@ -117,25 +117,72 @@ static tipo_t *parseia_tipo_base(void)
   return NULL;
 }
 
-// declarador completo: estrelas antes do nome, colchetes depois.
+static int parseia_dims_array(int dims[], int max)
+{
+  int n = 0;
+  while (aceita(TK_LBRACKET)) {
+    if (TT() != TK_INT_LIT) erro("tamanho de array deve ser uma constante inteira");
+    if (n >= max) erro("array com dimensões demais");
+    dims[n++] = (int)TOK()->valor;
+    avanca();
+    espera(TK_RBRACKET);
+  }
+  return n;
+}
+
+// declarador completo: estrelas antes do nome, colchetes depois. Também
+// reconhece a sintaxe de ponteiro de função "TIPO (*nome)(parâmetros)"
+// (e "TIPO (*nome[N])(parâmetros)" para arrays de ponteiros de função,
+// o formato usado por tabelas de despacho/vetores de interrupção) --
+// detectada pelo "(" seguido de "*" logo após as estrelas do tipo de
+// retorno. Suporta só um nível: NÃO suporta ponteiro-de-ponteiro-de-
+// -função nem função retornando ponteiro de função (construções raras
+// e, sem "typedef" -- que o mcc também não suporta -- pouco práticas de
+// escrever mesmo em C de verdade). Ver README, seção "Ponteiros de
+// função", para exemplos e a lista completa do que não é suportado.
+//
 // se "nome_opcional" for true, o identificador pode faltar (protótipos).
 static tipo_t *parseia_declarador_ex(tipo_t *base, char *nome_out, size_t nome_tam, bool nome_opcional)
 {
   tipo_t *t = base;
   while (aceita(TK_STAR)) t = tipo_ponteiro(t);
 
+  if (TT() == TK_LPAREN && PEEK(1) == TK_STAR) {
+    avanca(); // '('
+    avanca(); // '*'
+    if (TT() == TK_IDENT) { snprintf(nome_out, nome_tam, "%s", TOK()->texto); avanca(); }
+    else if (nome_opcional) { nome_out[0] = '\0'; }
+    else erro("esperado identificador na declaração de ponteiro de função");
+
+    int dims[8];
+    int n_dims = parseia_dims_array(dims, 8);
+    espera(TK_RPAREN); // fecha "(*nome[...])"
+    espera(TK_LPAREN); // abre a lista de parâmetros da função apontada
+
+    tipo_t *params[SIMB_MAX_PARAMS]; int n_params = 0;
+    if (TT() == TK_KW_VOID && PEEK(1) == TK_RPAREN) { avanca(); }
+    else if (TT() != TK_RPAREN) {
+      do {
+        if (n_params >= SIMB_MAX_PARAMS) erro("ponteiro de função com parâmetros demais");
+        tipo_t *pbase = parseia_tipo_base();
+        char nome_param_ignorado[64];
+        tipo_t *ptipo = parseia_declarador_ex(pbase, nome_param_ignorado, sizeof(nome_param_ignorado), true);
+        params[n_params++] = tipo_eh_ponteiro_ou_array(ptipo) ? tipo_decai(ptipo) : ptipo;
+      } while (aceita(TK_COMMA));
+    }
+    espera(TK_RPAREN);
+
+    tipo_t *resultado = tipo_ponteiro(tipo_funcao(t, params, n_params));
+    for (int i = n_dims - 1; i >= 0; i--) resultado = tipo_array(resultado, dims[i]);
+    return resultado;
+  }
+
   if (TT() == TK_IDENT) { snprintf(nome_out, nome_tam, "%s", TOK()->texto); avanca(); }
   else if (nome_opcional) { nome_out[0] = '\0'; }
   else erro("esperado identificador na declaração");
 
-  int dims[8]; int n_dims = 0;
-  while (aceita(TK_LBRACKET)) {
-    if (TT() != TK_INT_LIT) erro("tamanho de array deve ser uma constante inteira");
-    if (n_dims >= 8) erro("array com dimensões demais");
-    dims[n_dims++] = (int)TOK()->valor;
-    avanca();
-    espera(TK_RBRACKET);
-  }
+  int dims[8];
+  int n_dims = parseia_dims_array(dims, 8);
   for (int i = n_dims - 1; i >= 0; i--) t = tipo_array(t, dims[i]);
   return t;
 }
@@ -192,7 +239,18 @@ static no_t *parseia_primaria(void)
     simbolo_t *s = simbolo_acha(nome);
     if (s == NULL) erro("identificador não declarado: '%s'", nome);
     avanca();
-    no_t *n = novo_no(NO_VAR); n->simb = s; n->tipo = s->tipo;
+    no_t *n = novo_no(NO_VAR); n->simb = s;
+    if (s->categoria == SIMB_FUNCAO) {
+      // uma referência "nua" ao nome de uma função (não seguida de "(" --
+      // uma chamada de verdade nunca passa por aqui, ver o tratamento de
+      // "(" em parseia_posfixa) tem, como valor, o ENDEREÇO dela: o
+      // mesmo "decaimento" que um array sofre ao ser usado como valor
+      // (ver tipo_decai) -- por isso o tipo aqui já é "ponteiro para
+      // função", não o tipo de retorno puro (que fica em s->tipo).
+      n->tipo = tipo_ponteiro(tipo_funcao(s->tipo, s->params, s->n_params));
+    } else {
+      n->tipo = s->tipo;
+    }
     return n;
   }
   if (aceita(TK_LPAREN)) { no_t *n = parseia_atribuicao(); espera(TK_RPAREN); return n; }
@@ -209,13 +267,34 @@ static no_t *parseia_posfixa(void)
       espera(TK_RBRACKET);
       tipo_t *decaido = tipo_decai(n->tipo);
       if (decaido->cat != T_PONTEIRO) erro("indexação '[]' requer ponteiro ou array");
+      if (decaido->base->cat == T_FUNCAO)
+        erro("indexação '[]' não pode ser usada num ponteiro de função (você quis dizer '(...)' para chamar?)");
       no_t *m = novo_no(NO_INDICE); m->a = n; m->b = idx; m->tipo = decaido->base;
       n = m; continue;
     }
     if (aceita(TK_LPAREN)) {
-      if (n->nt != NO_VAR || n->simb->categoria != SIMB_FUNCAO) erro("chamada requer uma função");
-      simbolo_t *f = n->simb;
-      no_t *m = novo_no(NO_CHAMADA); m->simb = f; m->n_args = 0;
+      // duas formas de chamada: direta (o nome de uma função de verdade
+      // -- gera "call rotulo") ou indireta (qualquer expressão de tipo
+      // "ponteiro de função": variável, *ponteiro, a[i], s.campo -- gera
+      // "call rN", o endereço calculado em um registrador). Ver o
+      // comentário de bios_mancha's README ("Escalonador implementado em
+      // C") para o motivo dessa segunda forma ter sido adicionada: sem
+      // ela não dava para montar/usar tabelas de despacho (vetor de
+      // interrupções, tabela de chamadas de sistema) diretamente em C.
+      no_t *m = novo_no(NO_CHAMADA);
+      int aridade_esperada = -1;
+      if (n->nt == NO_VAR && n->simb->categoria == SIMB_FUNCAO) {
+        m->simb = n->simb;
+        m->a = NULL;
+        aridade_esperada = n->simb->n_params;
+      } else if (n->tipo->cat == T_PONTEIRO && n->tipo->base->cat == T_FUNCAO) {
+        m->simb = NULL;
+        m->a = n;
+        aridade_esperada = n->tipo->base->qtd;
+      } else {
+        erro("chamada requer uma função ou um ponteiro de função");
+      }
+      m->n_args = 0;
       if (TT() != TK_RPAREN) {
         do {
           if (m->n_args >= SIMB_MAX_PARAMS) erro("chamada com argumentos demais");
@@ -223,8 +302,9 @@ static no_t *parseia_posfixa(void)
         } while (aceita(TK_COMMA));
       }
       espera(TK_RPAREN);
-      if (m->n_args != f->n_params) erro("função '%s' espera %d argumento(s), recebeu %d", f->nome, f->n_params, m->n_args);
-      m->tipo = f->tipo;
+      if (m->n_args != aridade_esperada)
+        erro("chamada espera %d argumento(s), recebeu %d", aridade_esperada, m->n_args);
+      m->tipo = (m->simb != NULL) ? m->simb->tipo : n->tipo->base->base;
       n = m; continue;
     }
     if (aceita(TK_DOT)) {
@@ -263,6 +343,16 @@ static no_t *parseia_unaria(void)
   if (aceita(TK_TILDE)) { no_t *o = parseia_unaria(); no_t *n = novo_no(NO_UNARIO); n->op = TK_TILDE; n->a = o; n->tipo = tipo_int(); return n; }
   if (aceita(TK_STAR)) {
     no_t *o = parseia_unaria();
+    if (o->tipo->cat == T_PONTEIRO && o->tipo->base->cat == T_FUNCAO) {
+      // desreferenciar um ponteiro de função não faz nada em C: "*fp"
+      // tem o mesmo valor que "fp" (ao contrário de int*/struct*, não
+      // existe aqui uma indireção de memória real -- o valor do
+      // ponteiro JÁ é o endereço executável). Por isso devolvemos o
+      // mesmo nó, sem envolver em NO_DEREF -- isso também faz
+      // "(*fp)(...)" funcionar através do mesmo caminho de chamada
+      // indireta usado por "fp(...)" (ver parseia_posfixa).
+      return o;
+    }
     if (!tipo_eh_ponteiro_ou_array(o->tipo)) erro("operador '*' (desreferência) requer ponteiro");
     no_t *n = novo_no(NO_DEREF); n->a = o; n->tipo = o->tipo->base;
     return n;
@@ -640,7 +730,12 @@ static no_t *gera_valor(no_t *n)
       break;
     }
     case NO_VAR:
-      if (n->simb->tipo->cat == T_ARRAY) { loc_t loc = gera_endereco(n); materializa_endereco_em_r0(loc); }
+      if (n->simb->categoria == SIMB_FUNCAO) {
+        // referência "nua" a uma função (nunca uma chamada de verdade --
+        // essa passa direto por NO_CHAMADA, ver parseia_posfixa): decai
+        // para o endereço dela, igual a um array usado fora de "[]"
+        emite("ld r0, %s", n->simb->rotulo);
+      } else if (n->simb->tipo->cat == T_ARRAY) { loc_t loc = gera_endereco(n); materializa_endereco_em_r0(loc); }
       else { loc_t loc = gera_endereco(n); carrega(loc, n->tipo); }
       break;
     case NO_DEREF:
@@ -801,7 +896,12 @@ static no_t *gera_valor(no_t *n)
     }
     case NO_CHAMADA: {
       for (int i = n->n_args - 1; i >= 0; i--) { gera_valor(n->args[i]); emite("push r0"); }
-      emite("call %s", n->simb->rotulo);
+      if (n->simb != NULL) {
+        emite("call %s", n->simb->rotulo);
+      } else {
+        gera_valor(n->a);     // r0 = endereço da função (ponteiro de função avaliado)
+        emite("call r0");
+      }
       if (n->n_args > 0) emite("add sp, %d", n->n_args * 2);
       break;
     }
@@ -849,6 +949,15 @@ static void emite_valor_escalar_constante(tipo_t *tipo, no_t *n)
   if (tipo->cat == T_PONTEIRO && tipo->base->cat == T_CHAR && n->nt == NO_STR) {
     const char *rot = pool_adiciona(n->str_texto, n->str_len);
     emite_dados(".dw %s", rot);
+    return;
+  }
+  if (tipo->cat == T_PONTEIRO && tipo->base->cat == T_FUNCAO &&
+      n->nt == NO_VAR && n->simb->categoria == SIMB_FUNCAO) {
+    // inicializador de ponteiro de função global (ex.: uma entrada de
+    // tabela de despacho): o montador resolve o rótulo pra endereço
+    // absoluto, igual já faz com literais de string e com os quadros do
+    // vetor de interrupções -- ver ../simulador_completo/README.md
+    emite_dados(".dw %s", n->simb->rotulo);
     return;
   }
   long v = avalia_constante(n);

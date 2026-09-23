@@ -54,6 +54,15 @@ tipo_t *tipo_de_struct(estrutura_t *e)
   return t;
 }
 
+tipo_t *tipo_funcao(tipo_t *retorno, tipo_t *const *params, int n_params)
+{
+  tipo_t *t = novo_tipo(T_FUNCAO);
+  t->base = retorno;
+  t->qtd = n_params;
+  for (int i = 0; i < n_params && i < TIPO_MAX_PARAMS; i++) t->params[i] = params[i];
+  return t;
+}
+
 estrutura_t *estrutura_acha(const char *nome)
 {
   for (estrutura_t *e = estruturas; e != NULL; e = e->prox)
@@ -100,6 +109,7 @@ int tipo_tamanho(const tipo_t *t)
     case T_PONTEIRO: return 2;
     case T_ARRAY: return t->qtd * tipo_tamanho(t->base);
     case T_STRUCT: return t->estrutura->tamanho;
+    case T_FUNCAO: return 0; // só aparece como base de um T_PONTEIRO, nunca sozinho
   }
   return 0;
 }
@@ -122,6 +132,12 @@ bool tipo_igual(const tipo_t *a, const tipo_t *b)
     case T_PONTEIRO: return tipo_igual(a->base, b->base);
     case T_ARRAY: return a->qtd == b->qtd && tipo_igual(a->base, b->base);
     case T_STRUCT: return a->estrutura == b->estrutura;
+    case T_FUNCAO:
+      if (!tipo_igual(a->base, b->base)) return false;
+      if (a->qtd != b->qtd) return false;
+      for (int i = 0; i < a->qtd; i++)
+        if (!tipo_igual(a->params[i], b->params[i])) return false;
+      return true;
     default: return true;
   }
 }
@@ -143,6 +159,16 @@ const char *tipo_texto(const tipo_t *t)
     case T_PONTEIRO: snprintf(b, 160, "%s *", tipo_texto(t->base)); break;
     case T_ARRAY: snprintf(b, 160, "%s [%d]", tipo_texto(t->base), t->qtd); break;
     case T_STRUCT: snprintf(b, 160, "struct %s", t->estrutura->nome); break;
+    case T_FUNCAO: {
+      char params_buf[128] = "";
+      for (int i = 0; i < t->qtd; i++) {
+        char tmp[160];
+        snprintf(tmp, sizeof(tmp), "%s%s", i > 0 ? ", " : "", tipo_texto(t->params[i]));
+        strncat(params_buf, tmp, sizeof(params_buf) - strlen(params_buf) - 1);
+      }
+      snprintf(b, 160, "%s (%s)", tipo_texto(t->base), params_buf);
+      break;
+    }
   }
   return b;
 }

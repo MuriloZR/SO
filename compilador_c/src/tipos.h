@@ -1,12 +1,25 @@
 // tipos.h -- sistema de tipos do subconjunto de C suportado pelo mcc
-// (int, char, void, ponteiros, arrays, structs -- sem float/double, sem
-// union, sem enum, sem typedef, sem qualificadores de tamanho/sinal).
+// (int, char, void, ponteiros, arrays, structs, ponteiros de função --
+// sem float/double, sem union, sem enum, sem typedef, sem qualificadores
+// de tamanho/sinal).
+//
+// Ponteiro de função é representado como um T_PONTEIRO cujo "base" é um
+// T_FUNCAO (a assinatura: tipo de retorno + tipos dos parâmetros) --
+// deliberadamente reaproveitando a mesma estrutura de ponteiro/array já
+// existente, para que a maior parte da máquina de tipos (decaimento,
+// tamanho, indexação de array de ponteiros de função, membro de struct)
+// funcione sem nenhum código extra. Ver o comentário de
+// "parseia_declarador_ex" em parser.c para a sintaxe suportada
+// (um único nível: sem ponteiro-de-ponteiro-de-função, sem função
+// retornando ponteiro de função).
 
 #ifndef TIPOS_H
 #define TIPOS_H
 
 #include <stdbool.h>
 #include <stddef.h>
+
+#define TIPO_MAX_PARAMS 16
 
 typedef enum {
   T_VOID,
@@ -15,6 +28,8 @@ typedef enum {
   T_PONTEIRO,
   T_ARRAY,
   T_STRUCT,
+  T_FUNCAO,   // só aparece como "base" de um T_PONTEIRO (ponteiro de função);
+               // ver comentário acima
 } categoria_tipo_t;
 
 typedef struct tipo tipo_t;
@@ -24,8 +39,10 @@ typedef struct estrutura estrutura_t;
 struct tipo {
   categoria_tipo_t cat;
   tipo_t *base;        // PONTEIRO: tipo apontado. ARRAY: tipo do elemento.
-  int qtd;              // ARRAY: número de elementos.
+                          // FUNCAO: tipo de retorno.
+  int qtd;              // ARRAY: número de elementos. FUNCAO: número de parâmetros.
   estrutura_t *estrutura; // STRUCT
+  tipo_t *params[TIPO_MAX_PARAMS]; // FUNCAO: tipos dos parâmetros, na ordem declarada
 };
 
 struct membro {
@@ -51,6 +68,7 @@ tipo_t *tipo_char(void);
 tipo_t *tipo_ponteiro(tipo_t *base);
 tipo_t *tipo_array(tipo_t *base, int qtd);
 tipo_t *tipo_de_struct(estrutura_t *e);
+tipo_t *tipo_funcao(tipo_t *retorno, tipo_t *const *params, int n_params);
 
 // tabela de structs (por nome de tag)
 estrutura_t *estrutura_acha(const char *nome);
