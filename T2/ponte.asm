@@ -1,6 +1,53 @@
 .equ TICKS_POR_FATIA = 4000
 
-; --- Wrappers para programas de usuário em C (so.h) ---
+; --- Rotina de Inicialização do Kernel ---
+
+_kernel_inicio:
+    ; Configura o temporizador da CPU
+    ld    r0, TICKS_POR_FATIA
+    ld    r1, r0
+    shr   r1, 8
+    outb  r1, (0x22)   ; PORTA_RELOGIO_LIM_ALTO
+    outb  r0, (0x23)   ; PORTA_RELOGIO_LIM_BAIXO
+
+    ; Habilita interrupções de console (bit0) e relógio (bit2)
+    ld    r0, 5
+    outb  r0, (0x30)
+
+    ; Registra as chamadas na tabela_syscalls da BIOS
+    ld    r0, _trampolim_le
+    st    r0, (tabela_syscalls)
+    ld    r0, _trampolim_escreve
+    st    r0, (tabela_syscalls+2)
+    ld    r0, _trampolim_cria_proc
+    st    r0, (tabela_syscalls+4)
+    ld    r0, _trampolim_mata_proc
+    st    r0, (tabela_syscalls+6)
+    ld    r0, _trampolim_espera_proc
+    st    r0, (tabela_syscalls+8)
+
+    ; Instala o manipulador de estouro de relógio
+    ld    r0, trampolim_escalonador
+    st    r0, (retomada_escalonador)
+
+    ; Instala o manipulador de interrupção do console no quadro 8 (endereço 64)
+    ld    r0, trampolim_console
+    st    r0, (64)
+
+    ; Mapeia a chamada de inicialização do Kernel C passando a tabela_syscalls
+    ld    r0, tabela_syscalls
+    push  r0
+    call  _f_procinit
+    add   sp, 2
+
+    ei                 ; Habilita interrupções globais
+
+    ; Prepara o retorno para o processo 'init' inicializado em C
+    ld    sp, pilha_sistema
+    add   sp, -32
+    rete
+
+; --- Wrappers para programas de usuário em C (lib.h) ---
 
 _f_so_le:
     push  bp
@@ -89,68 +136,6 @@ trampolim_escalonador:
     call  _f_so_escalona
     rete
 
-; --- Rotina de Inicialização do Kernel ---
-
-_kernel_inicio:
-    ; Configura o temporizador da CPU
-    ld    r0, TICKS_POR_FATIA
-    ld    r1, r0
-    shr   r1, 8
-    outb  r1, (0x22)   ; PORTA_RELOGIO_LIM_ALTO
-    outb  r0, (0x23)   ; PORTA_RELOGIO_LIM_BAIXO
-
-    ; Habilita interrupções de console (bit0) e relógio (bit2)
-    ld    r0, 5
-    outb  r0, (0x30)
-
-    ; Registra as chamadas na tabela_syscalls da BIOS
-    ld    r0, _trampolim_le
-    st    r0, (tabela_syscalls)
-    ld    r0, _trampolim_escreve
-    st    r0, (tabela_syscalls+2)
-    ld    r0, _trampolim_cria_proc
-    st    r0, (tabela_syscalls+4)
-    ld    r0, _trampolim_mata_proc
-    st    r0, (tabela_syscalls+6)
-    ld    r0, _trampolim_espera_proc
-    st    r0, (tabela_syscalls+8)
-
-    ; Instala o manipulador de estouro de relógio
-    ld    r0, trampolim_escalonador
-    st    r0, (retomada_escalonador)
-
-    ; Instala o manipulador de interrupção do console no quadro 8 (endereço 64)
-    ld    r0, trampolim_console
-    st    r0, (64)
-
-    ; Mapeia a chamada de inicialização do Kernel C passando a tabela_syscalls
-    ld    r0, tabela_syscalls
-    push  r0
-    call  _f_procinit
-    add   sp, 2
-
-    ei                 ; Habilita interrupções globais
-
-    ; Prepara o retorno para o processo 'init' inicializado em C
-    ld    sp, pilha_sistema
-    add   sp, -32
-    rete
-
-; Rotina auxiliar de escrita direta na porta da console
-_f_write_char:
-    push  bp
-    ld    bp, sp
-    ld    r0, (bp+4)
-    outb  r0, (1)
-    ld    sp, bp
-    pop   bp
-    ret
-
-; Permite ao Kernel C colocar a CPU em espera habilitando interrupções
-_f_espera_interrupcao:
-    ei
-    ret
-
 ; --- Trampolim da Interrupção de Teclado/Console ---
 trampolim_console:
 .loop:
@@ -170,3 +155,18 @@ trampolim_console:
 
 .end:
     rete
+
+; Rotina auxiliar de escrita direta na porta da console
+_f_write_char:
+    push  bp
+    ld    bp, sp
+    ld    r0, (bp+4)
+    outb  r0, (1)
+    ld    sp, bp
+    pop   bp
+    ret
+
+; Permite ao Kernel C colocar a CPU em espera habilitando interrupções
+_f_espera_interrupcao:
+    ei
+    ret
