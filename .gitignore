@@ -3,3 +3,4 @@
 bin/
 *.mob
 *.o
+compile_commands.json

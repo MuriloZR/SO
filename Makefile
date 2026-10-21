@@ -8,7 +8,7 @@
 .PHONY: all simulador_completo compilador_c bios_mancha T1 \
         clean clean-simulador_completo clean-compilador_c clean-bios_mancha clean-T1
 
-all: simulador_completo compilador_c bios_mancha T1
+all: simulador_completo compilador_c bios_mancha T1 T2
 
 simulador_completo:
 	$(MAKE) -C simulador_completo all
@@ -23,7 +23,10 @@ bios_mancha: simulador_completo compilador_c
 T1: compilador_c
 	$(MAKE) -C T1 all
 
-clean: clean-compilador_c clean-bios_mancha clean-simulador_completo clean-T1
+T2: compilador_c
+	$(MAKE) -C T2 all
+
+clean: clean-compilador_c clean-bios_mancha clean-simulador_completo clean-T1 clean-T2
 
 clean-simulador_completo:
 	$(MAKE) -C simulador_completo clean
@@ -36,3 +39,6 @@ clean-bios_mancha:
 
 clean-T1:
 	$(MAKE) -C T1 clean
+
+clean-T2:
+	$(MAKE) -C T2 clean

@@ -1,6 +1,7 @@
 # Processador Mancha
 
-**Autor original:** Marcelo Pasin — Universidade Federal de Santa Maria (26 de agosto de 2004)
+**Esse repositório é um fork do repositório do professor da disciplina, disponível em** [Mancha](https://gitlab.inf.ufsm.br/jvlima/mancha) \
+**Autor original:** Marcelo Pasin — Universidade Federal de Santa Maria (26 de agosto de 2004) \
 **Documento de referência preparado a partir do texto original**, com correções de digitação e pequenos ajustes de redação.
 
 ---
