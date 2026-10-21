@@ -6,21 +6,21 @@ _f_atraso:
 	sub sp, 2
 	ld r0, 0
 	st r0, (bp+-2)
-_L5c2c2334_4:
+_L517ec05f_4:
 	ld r0, (bp+-2)
 	push r0
 	ld r0, 600
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L5c2c2334_6
+	jmpc lt, _L517ec05f_6
 	ld r0, 0
-	jmp _L5c2c2334_7
-_L5c2c2334_6:
+	jmp _L517ec05f_7
+_L517ec05f_6:
 	ld r0, 1
-_L5c2c2334_7:
+_L517ec05f_7:
 	cmp r0, 0
-	jmpc eq, _L5c2c2334_5
+	jmpc eq, _L517ec05f_5
 	ld r0, (bp+-2)
 	push r0
 	ld r0, 1
@@ -28,53 +28,53 @@ _L5c2c2334_7:
 	pop r0
 	add r0, r1
 	st r0, (bp+-2)
-	jmp _L5c2c2334_4
-_L5c2c2334_5:
+	jmp _L517ec05f_4
+_L517ec05f_5:
 	ld sp, bp
 	pop bp
 	ret
 _f_processoA:
 	push bp
 	ld bp, sp
-_L5c2c2334_11:
+_L517ec05f_11:
 	ld r0, 65
 	push r0
 	call _f_escreve_caractere
 	add sp, 2
 	call _f_atraso
-_L5c2c2334_12:
-	jmp _L5c2c2334_11
-_L5c2c2334_13:
+_L517ec05f_12:
+	jmp _L517ec05f_11
+_L517ec05f_13:
 	ld sp, bp
 	pop bp
 	ret
 _f_processoB:
 	push bp
 	ld bp, sp
-_L5c2c2334_17:
+_L517ec05f_17:
 	ld r0, 66
 	push r0
 	call _f_escreve_caractere
 	add sp, 2
 	call _f_atraso
-_L5c2c2334_18:
-	jmp _L5c2c2334_17
-_L5c2c2334_19:
+_L517ec05f_18:
+	jmp _L517ec05f_17
+_L517ec05f_19:
 	ld sp, bp
 	pop bp
 	ret
 _f_processoC:
 	push bp
 	ld bp, sp
-_L5c2c2334_23:
+_L517ec05f_23:
 	ld r0, 67
 	push r0
 	call _f_escreve_caractere
 	add sp, 2
 	call _f_atraso
-_L5c2c2334_24:
-	jmp _L5c2c2334_23
-_L5c2c2334_25:
+_L517ec05f_24:
+	jmp _L517ec05f_23
+_L517ec05f_25:
 	ld sp, bp
 	pop bp
 	ret
@@ -161,52 +161,52 @@ _f_inicializa_processos:
 	sub sp, 2
 	ld r0, 0
 	st r0, (bp+-2)
-_L5c2c2334_36:
+_L517ec05f_36:
 	ld r0, (bp+-2)
 	push r0
 	ld r0, 3
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L5c2c2334_39
+	jmpc lt, _L517ec05f_39
 	ld r0, 0
-	jmp _L5c2c2334_40
-_L5c2c2334_39:
+	jmp _L517ec05f_40
+_L517ec05f_39:
 	ld r0, 1
-_L5c2c2334_40:
+_L517ec05f_40:
 	cmp r0, 0
-	jmpc eq, _L5c2c2334_38
+	jmpc eq, _L517ec05f_38
 	ld r0, (bp+-2)
 	push r0
 	call _f_monta_quadro_inicial
 	add sp, 2
-_L5c2c2334_37:
+_L517ec05f_37:
 	ld r0, (bp+-2)
 	push r0
 	add r0, 1
 	st r0, (bp+-2)
 	pop r0
-	jmp _L5c2c2334_36
-_L5c2c2334_38:
+	jmp _L517ec05f_36
+_L517ec05f_38:
 	ld r0, 0
 	st r0, (_g_processo_atual)
 	ld r0, 0
 	st r0, (bp+-2)
-_L5c2c2334_41:
+_L517ec05f_41:
 	ld r0, (bp+-2)
 	push r0
 	ld r0, 16
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L5c2c2334_44
+	jmpc lt, _L517ec05f_44
 	ld r0, 0
-	jmp _L5c2c2334_45
-_L5c2c2334_44:
+	jmp _L517ec05f_45
+_L517ec05f_44:
 	ld r0, 1
-_L5c2c2334_45:
+_L517ec05f_45:
 	cmp r0, 0
-	jmpc eq, _L5c2c2334_43
+	jmpc eq, _L517ec05f_43
 	ld r0, (bp+4)
 	push r0
 	ld r0, (bp+-2)
@@ -223,14 +223,14 @@ _L5c2c2334_45:
 	ld r0, (r1)
 	pop r1
 	st r0, (r1)
-_L5c2c2334_42:
+_L517ec05f_42:
 	ld r0, (bp+-2)
 	push r0
 	add r0, 1
 	st r0, (bp+-2)
 	pop r0
-	jmp _L5c2c2334_41
-_L5c2c2334_43:
+	jmp _L517ec05f_41
+_L517ec05f_43:
 	ld sp, bp
 	pop bp
 	ret
@@ -251,21 +251,21 @@ _f_escalonador:
 	st r0, (bp+-6)
 	ld r0, 0
 	st r0, (bp+-4)
-_L5c2c2334_57:
+_L517ec05f_57:
 	ld r0, (bp+-4)
 	push r0
 	ld r0, 16
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L5c2c2334_59
+	jmpc lt, _L517ec05f_59
 	ld r0, 0
-	jmp _L5c2c2334_60
-_L5c2c2334_59:
+	jmp _L517ec05f_60
+_L517ec05f_59:
 	ld r0, 1
-_L5c2c2334_60:
+_L517ec05f_60:
 	cmp r0, 0
-	jmpc eq, _L5c2c2334_58
+	jmpc eq, _L517ec05f_58
 	ld r0, (bp+6)
 	push r0
 	ld r0, (bp+-6)
@@ -294,8 +294,8 @@ _L5c2c2334_60:
 	pop r0
 	add r0, r1
 	st r0, (bp+-4)
-	jmp _L5c2c2334_57
-_L5c2c2334_58:
+	jmp _L517ec05f_57
+_L517ec05f_58:
 	ld r0, (bp+-2)
 	push r0
 	ld r0, 1
@@ -309,17 +309,17 @@ _L5c2c2334_58:
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc ge, _L5c2c2334_61
+	jmpc ge, _L517ec05f_61
 	ld r0, 0
-	jmp _L5c2c2334_62
-_L5c2c2334_61:
+	jmp _L517ec05f_62
+_L517ec05f_61:
 	ld r0, 1
-_L5c2c2334_62:
+_L517ec05f_62:
 	cmp r0, 0
-	jmpc eq, _L5c2c2334_63
+	jmpc eq, _L517ec05f_63
 	ld r0, 0
 	st r0, (bp+-2)
-_L5c2c2334_63:
+_L517ec05f_63:
 	ld r0, (bp+8)
 	ld r1, r0
 	push r1
@@ -335,21 +335,21 @@ _L5c2c2334_63:
 	st r0, (bp+-6)
 	ld r0, 0
 	st r0, (bp+-4)
-_L5c2c2334_64:
+_L517ec05f_64:
 	ld r0, (bp+-4)
 	push r0
 	ld r0, 16
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L5c2c2334_66
+	jmpc lt, _L517ec05f_66
 	ld r0, 0
-	jmp _L5c2c2334_67
-_L5c2c2334_66:
+	jmp _L517ec05f_67
+_L517ec05f_66:
 	ld r0, 1
-_L5c2c2334_67:
+_L517ec05f_67:
 	cmp r0, 0
-	jmpc eq, _L5c2c2334_65
+	jmpc eq, _L517ec05f_65
 	ld r0, (bp+4)
 	push r0
 	ld r0, (bp+-4)
@@ -378,8 +378,8 @@ _L5c2c2334_67:
 	pop r0
 	add r0, r1
 	st r0, (bp+-4)
-	jmp _L5c2c2334_64
-_L5c2c2334_65:
+	jmp _L517ec05f_64
+_L517ec05f_65:
 	ld sp, bp
 	pop bp
 	ret

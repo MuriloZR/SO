@@ -71,6 +71,8 @@
         .equ    pilha_sistema = 0xF000
         .equ    pilha_nucleo  = 0xE000
 
+; O vetor de interrupções é constituído de 16 quadros de 8 bytes cada, totalizando 128 bytes,
+; os 8 bytes de cada quadro são constituídos por 4 valores de 2 bytes cada, sendo eles ip, sp, cs, ds
 ; =========================================================== vetor (0-127)
 
         .org    0
