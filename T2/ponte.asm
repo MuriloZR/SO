@@ -119,6 +119,10 @@ _kernel_inicio:
     ld    r0, trampolim_escalonador
     st    r0, (retomada_escalonador)
 
+    ; Instala o manipulador de interrupção do console no quadro 8 (endereço 64)
+    ld    r0, trampolim_console
+    st    r0, (64)
+
     ; Mapeia a chamada de inicialização do Kernel C passando a tabela_syscalls
     ld    r0, tabela_syscalls
     push  r0
@@ -146,3 +150,23 @@ _f_write_char:
 _f_espera_interrupcao:
     ei
     ret
+
+; --- Trampolim da Interrupção de Teclado/Console ---
+trampolim_console:
+.loop:
+    inb   r0, (2)      ; Lê o estado da porta do console
+    and   r0, 2
+    cmp   r0, 0
+    jmpc  eq, .end    ; Se não houver mais caracteres para ler, encerra
+
+    inb   r0, (1)      ; Lê o caractere da porta 1
+    and   r0, 255
+
+    push  r0
+    call  _f_received_key  ; Entrega o caractere para o Kernel C
+    add   sp, 2
+
+    jmp   .loop
+
+.end:
+    rete
