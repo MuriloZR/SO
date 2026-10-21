@@ -1,17 +1,17 @@
 #include "lib.h"
 
-void processo_filho2(void) {
-    so_escreve('F');
-    so_escreve('2');
-    so_escreve('\n');
-    so_mata_proc(0); // Mata a si mesmo
-}
-
 void processo_filho1(void) {
     so_escreve('F');
     so_escreve('1');
     so_escreve('\n');
-    so_mata_proc(0); // Mata a si mesmo
+    so_mata_proc(0);
+}
+
+void processo_filho2(void) {
+    so_escreve('F');
+    so_escreve('2');
+    so_escreve('\n');
+    so_mata_proc(0);
 }
 
 void init(void) {
@@ -24,12 +24,13 @@ void init(void) {
     so_escreve('t');
     so_escreve('\n');
 
-    // Cria o primeiro processo filho
     pid1 = so_cria_proc(processo_filho1);
-
-    // Cria o segundo processo filho
     pid2 = so_cria_proc(processo_filho2);
 
-    // Encerra o processo principal init
+    // Espera os filhos encerrarem (sincronização explícita via Syscall)
+    if (pid1 > 0) so_espera_proc(pid1);
+    if (pid2 > 0) so_espera_proc(pid2);
+
+    // O Init encerra por último, disparando a rotina de encerramento do SO
     so_mata_proc(0);
 }
