@@ -1,11 +1,12 @@
+// kernel.c -- Implementação completa das métricas da Parte III
+
 #define NPROC 8
 #define TAM_PILHA 64
 #define TAM_QUADRO 16
 #define TAM_BUF 16
+#define QUANTUM_DEFAULT 4
 
-#define QUANTUM_DEFAULT 4 // Quantum em número de ticks de relógio
-
-// Estados de Processos
+// Estados
 #define ESTADO_LIVRE     0
 #define ESTADO_PRONTO    1
 #define ESTADO_EXECUCAO  2
@@ -17,6 +18,9 @@
 #define BLOQ_LEITURA     1
 #define BLOQ_ESPERA_PROC 2
 
+#define ENDERECO_QUADRO_SISTEMA 0xEFE0
+#define TAM_BUFFER_ENTRADA 16
+
 struct Processo {
     int pid;
     int estado;
@@ -25,15 +29,30 @@ struct Processo {
     int quadro[TAM_QUADRO];
     int pilha[TAM_PILHA];
 
-    // Prioridade e Preempção
-    int prioridade;          // Representada em porcentagem (50 = 0.5)
-    int t_exec;              // Ticks executados no quantum atual
-    int num_preempcoes;      // Contador de preempções do processo
+    int prioridade;
+    int t_exec;
 
-    // Métricas
-    int num_entradas_pronto;
-    int num_entradas_bloqueado;
-    int num_entradas_execucao;
+    // --- Métricas por Processo ---
+    int data_criacao;           // Tick em que foi criado
+    int data_termino;           // Tick em que morreu
+    int num_preempcoes;         // Número de preempções sofridas
+
+    // Contadores de entradas nos estados
+    int cnt_pronto;
+    int cnt_bloqueado;
+    int cnt_execucao;
+
+    // Tempos acumulados em cada estado (em ticks)
+    int tempo_pronto;
+    int tempo_bloqueado;
+    int tempo_execucao;
+
+    // Controle de tempo de resposta (tempo entre desbloquear e ser escalonado)
+    int tick_desbloqueio;       // Tick em que o processo ficou PRONTO
+    int soma_tempo_resposta;   // Soma dos intervalos ate ser escalonado
+    int num_respostas;          // Quantidade de vezes que foi escalonado apos ficar pronto
+
+    int tick_ultimo_estado;     // Marca temporal da ultima mudanca de estado
 };
 #define Processo struct Processo
 
@@ -42,17 +61,21 @@ int processo_atual = -1;
 int proximo_pid = 1;
 int quantum_restante = QUANTUM_DEFAULT;
 
-// Métrica do Sistema
+// --- Métricas Globais do Sistema ---
+int relogio_ticks = 0;              // Tempo total de execução (ticks do relógio)
+int ticks_ociosos = 0;              // Tempo em que o sistema ficou no IDLE
 int total_processos_criados = 0;
 int total_preempcoes_sistema = 0;
-int ticks_ociosos = 0;
-int ticks_totais = 0;
 
-// Buffer Circular de Teclado
-int kbd_buf[TAM_BUF];
-int kbd_head = 0;
-int kbd_tail = 0;
-int kbd_count = 0;
+// Contadores de Interrupções por tipo
+int int_relogio_count = 0;
+int int_teclado_count = 0;
+int int_syscall_count = 0;
+
+int buffer_console_dados[TAM_BUFFER_ENTRADA];
+int buffer_console_inicio = 0;  // Equivalente ao head
+int buffer_console_fim = 0;     // Equivalente ao tail
+int buffer_console_qtd = 0;      // Equivalente ao count
 
 void write_char(int c);
 void espera_interrupcao(void);
@@ -60,29 +83,107 @@ void process_idle_code(void);
 void init(void);
 void imprime_metricas(void);
 
-void salva_contexto(int idx) {
-    int *quadro_sis;
+// Função auxiliar para imprimir inteiros em C puro
+void print_int(int num) {
+    char buf[10];
     int i;
-    quadro_sis = (int*) 0xEFE0;
+    int temp;
+
+    if (num == 0) {
+        write_char('0');
+        return;
+    }
+    if (num < 0) {
+        write_char('-');
+        num = -num;
+    }
+
+    i = 0;
+    temp = num;
+    while (temp > 0) {
+        buf[i] = '0' + (temp % 10);
+        temp = temp / 10;
+        i = i + 1;
+    }
+
+    while (i > 0) {
+        i = i - 1;
+        write_char(buf[i]);
+    }
+}
+
+void print_str(char *s) {
+    int i;
+    i = 0;
+    while (s[i] != '\0') {
+        write_char(s[i]);
+        i = i + 1;
+    }
+}
+
+void salva_contexto(int idx) {
+    int *quadro_hardware;
+    int i;
+
     if (idx < 0 || idx >= NPROC) return;
+
+    quadro_hardware = (int*) ENDERECO_QUADRO_SISTEMA;
 
     i = 0;
     while (i < TAM_QUADRO) {
-        tabela_processos[idx].quadro[i] = quadro_sis[i];
+        tabela_processos[idx].quadro[i] = quadro_hardware[i];
         i = i + 1;
     }
 }
 
 void restaura_contexto(int idx) {
-    int *quadro_sis;
+    int *quadro_hardware;
     int i;
-    quadro_sis = (int*) 0xEFE0;
+
     if (idx < 0 || idx >= NPROC) return;
+
+    quadro_hardware = (int*) ENDERECO_QUADRO_SISTEMA;
 
     i = 0;
     while (i < TAM_QUADRO) {
-        quadro_sis[i] = tabela_processos[idx].quadro[i];
+        quadro_hardware[i] = tabela_processos[idx].quadro[i];
         i = i + 1;
+    }
+}
+
+// Atualiza o tempo acumulado no estado anterior antes de transicionar
+void muda_estado(int idx, int novo_estado) {
+    int delta;
+    if (idx < 0 || idx >= NPROC) return;
+
+    delta = relogio_ticks - tabela_processos[idx].tick_ultimo_estado;
+
+    if (tabela_processos[idx].estado == ESTADO_PRONTO) {
+        tabela_processos[idx].tempo_pronto = tabela_processos[idx].tempo_pronto + delta;
+    } else if (tabela_processos[idx].estado == ESTADO_EXECUCAO) {
+        tabela_processos[idx].tempo_execucao = tabela_processos[idx].tempo_execucao + delta;
+    } else if (tabela_processos[idx].estado == ESTADO_BLOQUEADO) {
+        tabela_processos[idx].tempo_bloqueado = tabela_processos[idx].tempo_bloqueado + delta;
+    }
+
+    tabela_processos[idx].estado = novo_estado;
+    tabela_processos[idx].tick_ultimo_estado = relogio_ticks;
+
+    // Registra métricas de entrada
+    if (novo_estado == ESTADO_PRONTO) {
+        tabela_processos[idx].cnt_pronto = tabela_processos[idx].cnt_pronto + 1;
+        tabela_processos[idx].tick_desbloqueio = relogio_ticks;
+    } else if (novo_estado == ESTADO_EXECUCAO) {
+        tabela_processos[idx].cnt_execucao = tabela_processos[idx].cnt_execucao + 1;
+
+        // Se estava aguardando na fila de PRONTO, calcula o tempo de resposta
+        if (tabela_processos[idx].tick_desbloqueio >= 0) {
+            tabela_processos[idx].soma_tempo_resposta = tabela_processos[idx].soma_tempo_resposta + (relogio_ticks - tabela_processos[idx].tick_desbloqueio);
+            tabela_processos[idx].num_respostas = tabela_processos[idx].num_respostas + 1;
+            tabela_processos[idx].tick_desbloqueio = -1;
+        }
+    } else if (novo_estado == ESTADO_BLOQUEADO) {
+        tabela_processos[idx].cnt_bloqueado = tabela_processos[idx].cnt_bloqueado + 1;
     }
 }
 
@@ -92,12 +193,22 @@ void monta_quadro_processo(int idx, int pid, int ip_inicial, int sr_inicial) {
     tabela_processos[idx].motivo_bloqueio = BLOQ_NENHUM;
     tabela_processos[idx].pid_esperado = -1;
 
-    tabela_processos[idx].prioridade = 50; // Prioridade inicial 0.5 (50%)
-    tabela_processos[idx].t_exec = 0;
+    tabela_processos[idx].data_criacao = relogio_ticks;
+    tabela_processos[idx].data_termino = -1;
     tabela_processos[idx].num_preempcoes = 0;
-    tabela_processos[idx].num_entradas_pronto = 0;
-    tabela_processos[idx].num_entradas_bloqueado = 0;
-    tabela_processos[idx].num_entradas_execucao = 0;
+
+    tabela_processos[idx].cnt_pronto = 0;
+    tabela_processos[idx].cnt_bloqueado = 0;
+    tabela_processos[idx].cnt_execucao = 0;
+
+    tabela_processos[idx].tempo_pronto = 0;
+    tabela_processos[idx].tempo_bloqueado = 0;
+    tabela_processos[idx].tempo_execucao = 0;
+
+    tabela_processos[idx].tick_desbloqueio = -1;
+    tabela_processos[idx].soma_tempo_resposta = 0;
+    tabela_processos[idx].num_respostas = 0;
+    tabela_processos[idx].tick_ultimo_estado = relogio_ticks;
 
     k = 0;
     while (k < TAM_QUADRO) {
@@ -119,17 +230,14 @@ void procinit(int addr_tabela_syscalls) {
         i = i + 1;
     }
 
-    // Processo IDLE
     monta_quadro_processo(0, 0, (int)process_idle_code, 0x8000);
     tabela_processos[0].estado = ESTADO_PRONTO;
 
-    // Processo Init
     monta_quadro_processo(1, proximo_pid, (int)init, 0x0000);
     proximo_pid = proximo_pid + 1;
     total_processos_criados = total_processos_criados + 1;
 
-    tabela_processos[1].estado = ESTADO_EXECUCAO;
-    tabela_processos[1].num_entradas_execucao = 1;
+    muda_estado(1, ESTADO_EXECUCAO);
 
     processo_atual = 1;
     quantum_restante = QUANTUM_DEFAULT;
@@ -142,54 +250,39 @@ void process_idle_code(void) {
     }
 }
 
-// Recalcula prioridade ao perder a CPU: prio = (prio + t_exec/t_quantum) / 2
-void recalcula_prioridade(int idx) {
-    int percentual_exec;
-    if (idx <= 0) return;
-
-    percentual_exec = (tabela_processos[idx].t_exec * 100) / QUANTUM_DEFAULT;
-    tabela_processos[idx].prioridade = (tabela_processos[idx].prioridade + percentual_exec) / 2;
-    tabela_processos[idx].t_exec = 0;
-}
-
-// Escalonador Round-Robin Preemptivo com Tratamento de Quantum
 void so_escalona(void) {
     int atual;
     int i;
     int proximo;
     int escolhido;
 
-    ticks_totais = ticks_totais + 1;
+    int_relogio_count = int_relogio_count + 1;
+    relogio_ticks = relogio_ticks + 1;
+
     atual = processo_atual;
 
     if (atual == 0) {
         ticks_ociosos = ticks_ociosos + 1;
     }
 
-    // Decrementa o quantum do processo atual se ele estiver rodando
+    // Preempção por estouro de quantum
     if (atual > 0 && tabela_processos[atual].estado == ESTADO_EXECUCAO) {
-        tabela_processos[atual].t_exec = tabela_processos[atual].t_exec + 1;
         quantum_restante = quantum_restante - 1;
 
-        // Se ainda tem quantum, continua no mesmo processo
         if (quantum_restante > 0) {
             return;
         }
 
-        // Fim do Quantum -> Preempção
         tabela_processos[atual].num_preempcoes = tabela_processos[atual].num_preempcoes + 1;
         total_preempcoes_sistema = total_preempcoes_sistema + 1;
-        recalcula_prioridade(atual);
 
-        tabela_processos[atual].estado = ESTADO_PRONTO;
-        tabela_processos[atual].num_entradas_pronto = tabela_processos[atual].num_entradas_pronto + 1;
+        muda_estado(atual, ESTADO_PRONTO);
     }
 
     if (atual != -1) {
         salva_contexto(atual);
     }
 
-    // Busca o próximo processo PRONTO em fila circular
     escolhido = -1;
     proximo = (atual + 1) % NPROC;
     if (proximo == 0) proximo = 1;
@@ -206,15 +299,13 @@ void so_escalona(void) {
     }
 
     if (escolhido == -1) {
-        escolhido = 0; // Se não há processos de usuário prontos, roda o IDLE
+        escolhido = 0;
     }
 
     processo_atual = escolhido;
-    quantum_restante = QUANTUM_DEFAULT; // Reinicia o quantum para o novo processo
+    quantum_restante = QUANTUM_DEFAULT;
 
-    tabela_processos[escolhido].estado = ESTADO_EXECUCAO;
-    tabela_processos[escolhido].num_entradas_execucao = tabela_processos[escolhido].num_entradas_execucao + 1;
-
+    muda_estado(escolhido, ESTADO_EXECUCAO);
     restaura_contexto(escolhido);
 }
 
@@ -226,8 +317,7 @@ void pwake(int pid_morto) {
             tabela_processos[i].motivo_bloqueio == BLOQ_ESPERA_PROC &&
             tabela_processos[i].pid_esperado == pid_morto) {
 
-            tabela_processos[i].estado = ESTADO_PRONTO;
-            tabela_processos[i].num_entradas_pronto = tabela_processos[i].num_entradas_pronto + 1;
+            muda_estado(i, ESTADO_PRONTO);
             tabela_processos[i].motivo_bloqueio = BLOQ_NENHUM;
             tabela_processos[i].pid_esperado = -1;
         }
@@ -235,59 +325,67 @@ void pwake(int pid_morto) {
     }
 }
 
-void received_key(int c) {
+// Trata o caractere vindo da interrupção do console (ponte.asm)
+void received_key(int caractere) {
     int i;
-    int p_esperando;
+    int proc_esperando;
 
-    p_esperando = -1;
+    int_teclado_count = int_teclado_count + 1;
+
+    // Busca se há algum processo bloqueado aguardando leitura
+    proc_esperando = -1;
     i = 1;
     while (i < NPROC) {
         if (tabela_processos[i].estado == ESTADO_BLOQUEADO &&
             tabela_processos[i].motivo_bloqueio == BLOQ_LEITURA) {
-            p_esperando = i;
+            proc_esperando = i;
             break;
         }
         i = i + 1;
     }
 
-    if (p_esperando != -1) {
-        tabela_processos[p_esperando].quadro[0] = c;
-        tabela_processos[p_esperando].estado = ESTADO_PRONTO;
-        tabela_processos[p_esperando].num_entradas_pronto = tabela_processos[p_esperando].num_entradas_pronto + 1;
-        tabela_processos[p_esperando].motivo_bloqueio = BLOQ_NENHUM;
+    if (proc_esperando != -1) {
+        // Grava o caractere lido diretamente no registrador R0 do processo
+        tabela_processos[proc_esperando].quadro[0] = caractere;
+        muda_estado(proc_esperando, ESTADO_PRONTO);
+        tabela_processos[proc_esperando].motivo_bloqueio = BLOQ_NENHUM;
 
         if (processo_atual == 0) {
             so_escalona();
         }
-    } else if (kbd_count < TAM_BUF) {
-        kbd_buf[kbd_tail] = c;
-        kbd_tail = (kbd_tail + 1) % TAM_BUF;
-        kbd_count = kbd_count + 1;
+    } else if (buffer_console_qtd < TAM_BUFFER_ENTRADA) {
+        // Armazena na fila circular do SO
+        buffer_console_dados[buffer_console_fim] = caractere;
+        buffer_console_fim = (buffer_console_fim + 1) % TAM_BUFFER_ENTRADA;
+        buffer_console_qtd = buffer_console_qtd + 1;
     }
 }
 
 // --- Syscalls ---
 
 int sys_read(void) {
-    int c;
-    if (kbd_count > 0) {
-        c = kbd_buf[kbd_head];
-        kbd_head = (kbd_head + 1) % TAM_BUF;
-        kbd_count = kbd_count - 1;
-        return c;
-    } else {
-        recalcula_prioridade(processo_atual);
-        tabela_processos[processo_atual].estado = ESTADO_BLOQUEADO;
-        tabela_processos[processo_atual].num_entradas_bloqueado = tabela_processos[processo_atual].num_entradas_bloqueado + 1;
-        tabela_processos[processo_atual].motivo_bloqueio = BLOQ_LEITURA;
+    int caractere;
+    int_syscall_count = int_syscall_count + 1;
 
-        quantum_restante = 0; // Força a troca
+    if (buffer_console_qtd > 0) {
+        caractere = buffer_console_dados[buffer_console_inicio];
+        buffer_console_inicio = (buffer_console_inicio + 1) % TAM_BUFFER_ENTRADA;
+        buffer_console_qtd = buffer_console_qtd - 1;
+        return caractere;
+    } else {
+        // Bloqueia e cede a CPU sem fazer espera ocupada
+        muda_estado(processo_atual, ESTADO_BLOQUEADO);
+        tabela_processos[processo_atual].motivo_bloqueio = BLOQ_LEITURA;
+        quantum_restante = 0;
         so_escalona();
+
+        // Retorna o valor gravado em R0 pelo tratamento da interrupção
         return tabela_processos[processo_atual].quadro[0];
     }
 }
 
 int sys_write(int c) {
+    int_syscall_count = int_syscall_count + 1;
     if (c == 0) return 0;
     write_char(c);
     return 1;
@@ -295,12 +393,12 @@ int sys_write(int c) {
 
 int sys_newproc(void (*entry)(void)) {
     int i;
+    int_syscall_count = int_syscall_count + 1;
     i = 1;
     while (i < NPROC) {
         if (tabela_processos[i].estado == ESTADO_LIVRE || tabela_processos[i].estado == ESTADO_MORTO) {
             monta_quadro_processo(i, proximo_pid, (int)entry, 0x0000);
-            tabela_processos[i].estado = ESTADO_PRONTO;
-            tabela_processos[i].num_entradas_pronto = 1;
+            muda_estado(i, ESTADO_PRONTO);
 
             proximo_pid = proximo_pid + 1;
             total_processos_criados = total_processos_criados + 1;
@@ -315,7 +413,9 @@ int sys_killproc(int pid) {
     int i;
     int idx_alvo;
 
+    int_syscall_count = int_syscall_count + 1;
     idx_alvo = -1;
+
     if (pid == 0 || pid == tabela_processos[processo_atual].pid) {
         idx_alvo = processo_atual;
     } else {
@@ -330,10 +430,11 @@ int sys_killproc(int pid) {
     }
 
     if (idx_alvo != -1) {
-        tabela_processos[idx_alvo].estado = ESTADO_MORTO;
+        tabela_processos[idx_alvo].data_termino = relogio_ticks;
+        muda_estado(idx_alvo, ESTADO_MORTO);
         pwake(tabela_processos[idx_alvo].pid);
 
-        // Se o Init morreu, o SO encerra e imprime o relatório final de métricas
+        // Imprime quando o Init morrer
         if (idx_alvo == 1) {
             imprime_metricas();
         }
@@ -350,6 +451,8 @@ int sys_killproc(int pid) {
 int sys_wait(int pid) {
     int i;
     int idx_alvo;
+
+    int_syscall_count = int_syscall_count + 1;
 
     if (pid <= 0 || pid == tabela_processos[processo_atual].pid) {
         return -1;
@@ -369,9 +472,7 @@ int sys_wait(int pid) {
         return -1;
     }
 
-    recalcula_prioridade(processo_atual);
-    tabela_processos[processo_atual].estado = ESTADO_BLOQUEADO;
-    tabela_processos[processo_atual].num_entradas_bloqueado = tabela_processos[processo_atual].num_entradas_bloqueado + 1;
+    muda_estado(processo_atual, ESTADO_BLOQUEADO);
     tabela_processos[processo_atual].motivo_bloqueio = BLOQ_ESPERA_PROC;
     tabela_processos[processo_atual].pid_esperado = pid;
 
@@ -380,30 +481,50 @@ int sys_wait(int pid) {
     return 0;
 }
 
+// Impressão Detalhada do Relatório Exigido pelo Professor
 void imprime_metricas(void) {
-    write_char('\n');
-    write_char('-');
-    write_char('-');
-    write_char(' ');
-    write_char('M');
-    write_char('E');
-    write_char('T');
-    write_char('R');
-    write_char('I');
-    write_char('C');
-    write_char('A');
-    write_char('S');
-    write_char(' ');
-    write_char('-');
-    write_char('-');
-    write_char('\n');
+    int i;
+    int tempo_retorno;
+    int tm_resposta;
 
-    write_char('P'); write_char('r'); write_char('o'); write_char('c'); write_char('s');
-    write_char(' '); write_char('C'); write_char('r'); write_char('i'); write_char('a'); write_char('d'); write_char('o'); write_char('s'); write_char(':'); write_char(' ');
-    write_char('0' + total_processos_criados);
-    write_char('\n');
+    print_str("\n================ RELATORIO DO SO ================\n");
+    print_str("1. Processos Criados: "); print_int(total_processos_criados); print_str("\n");
+    print_str("2. Tempo Total Execucao: "); print_int(relogio_ticks); print_str(" ticks\n");
+    print_str("3. Tempo Ocioso (Idle): "); print_int(ticks_ociosos); print_str(" ticks\n");
+    print_str("4. Total de Preempcoes: "); print_int(total_preempcoes_sistema); print_str("\n");
 
-    write_char('P'); write_char('r'); write_char('e'); write_char('e'); write_char('m'); write_char('p'); write_char('c'); write_char('o'); write_char('e'); write_char('s'); write_char(':'); write_char(' ');
-    write_char('0' + total_preempcoes_sistema);
-    write_char('\n');
+    print_str("5. Interrupcoes Recebidas:\n");
+    print_str("   - Relogio: "); print_int(int_relogio_count); print_str("\n");
+    print_str("   - Teclado: "); print_int(int_teclado_count); print_str("\n");
+    print_str("   - Syscalls: "); print_int(int_syscall_count); print_str("\n");
+
+    print_str("\n--- METRICAS POR PROCESSO ---\n");
+    i = 1;
+    while (i < NPROC) {
+        if (tabela_processos[i].pid != -1) {
+            print_str("Processo PID "); print_int(tabela_processos[i].pid); print_str(":\n");
+
+            tempo_retorno = tabela_processos[i].data_termino - tabela_processos[i].data_criacao;
+            print_str("  * Tempo Retorno: "); print_int(tempo_retorno); print_str(" ticks\n");
+            print_str("  * Preempcoes: "); print_int(tabela_processos[i].num_preempcoes); print_str("\n");
+
+            print_str("  * Entradas Estados (PR/BL/EX): ");
+            print_int(tabela_processos[i].cnt_pronto); print_str(" / ");
+            print_int(tabela_processos[i].cnt_bloqueado); print_str(" / ");
+            print_int(tabela_processos[i].cnt_execucao); print_str("\n");
+
+            print_str("  * Tempos acumulados (PR/BL/EX): ");
+            print_int(tabela_processos[i].tempo_pronto); print_str(" / ");
+            print_int(tabela_processos[i].tempo_bloqueado); print_str(" / ");
+            print_int(tabela_processos[i].tempo_execucao); print_str(" ticks\n");
+
+            tm_resposta = 0;
+            if (tabela_processos[i].num_respostas > 0) {
+                tm_resposta = tabela_processos[i].soma_tempo_resposta / tabela_processos[i].num_respostas;
+            }
+            print_str("  * Tempo Medio Resposta: "); print_int(tm_resposta); print_str(" ticks\n\n");
+        }
+        i = i + 1;
+    }
+    print_str("=================================================\n");
 }
