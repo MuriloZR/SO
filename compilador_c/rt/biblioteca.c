@@ -4,19 +4,6 @@
 
 #include "mancha.h"
 
-int retorna_clock_atual() {
-    return (mancha_in(0x0020) << 8) | mancha_in(0x0021);
-}
-
-int retorna_clock_max() {
-    return (mancha_in(0x0022) << 8) | mancha_in(0x0023);
-}
-
-void set_clock_max(int valor) {
-    mancha_out(0x0022, valor >> 8);
-    mancha_out(0x0023, valor);
-}
-
 int putchar(int c)
 {
     mancha_out(1, c);

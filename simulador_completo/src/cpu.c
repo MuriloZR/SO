@@ -345,7 +345,18 @@ static void cpu_interrompe(cpu_t *cpu, int numero)
   cpu->r[7] = novo_ip;
   cpu->s[4] = novo_cs;
   cpu->s[6] = novo_ds;
-  cpu->s[0] |= (SR_S | SR_I | SR_D);
+  // P precisa ser DESLIGADO aqui, não só S/I/D ligados: se quem foi
+  // interrompido estava com paginação ativa (P=1), o quadro do vetor só
+  // zera cs/ds (novo_cs/novo_ds, que tratamos como base de segmento
+  // plana), não a tabela de páginas -- sem isto, o PRÓPRIO atendimento
+  // da interrupção (os empilha_dado abaixo, e depois todo o código do
+  // handler) continuaria traduzindo endereços com P=1 e pt=novo_cs=0,
+  // lendo "entradas de tabela de páginas" de dentro do vetor de
+  // interrupções (endereço físico 0) -- sempre um resultado sem
+  // sentido. Nenhum exemplo anterior expôs isto porque nenhum disparava
+  // uma interrupção/trap estando com P=1 (o paginacao.asm original só
+  // faz "halt" direto, que não passa por aqui).
+  cpu->s[0] = (uint16_t)((cpu->s[0] & ~(uint16_t)SR_P) | (SR_S | SR_I | SR_D));
 
   uint16_t ordem[16] = {
     s_antigo[7], s_antigo[6], s_antigo[5], s_antigo[4],

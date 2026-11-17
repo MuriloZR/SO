@@ -88,7 +88,7 @@ de um registrador de uso geral — só através de memória.
 ## Build
 
 ```sh
-make            # compila bin/montador, bin/simulador, e monta os exemplos
+make            # compila bin/montador, bin/simulador, bin/mob2bin, e monta os exemplos
 ```
 
 Requer `gcc` e a biblioteca `ncurses` (`libncurses-dev` no Debian/Ubuntu).
@@ -98,6 +98,7 @@ Requer `gcc` e a biblioteca `ncurses` (`libncurses-dev` no Debian/Ubuntu).
 ```sh
 ./bin/montador exemplos/soma.asm -o exemplos/soma.mob
 ./bin/simulador exemplos/soma.mob [-D imagem_disco0] [-D imagem_disco1]
+./bin/mob2bin exemplos/soma.mob 512 soma.bin   # .mob já resolvido -> binário achatado
 ```
 
 (`make` já monta os `.asm` de `exemplos/` automaticamente.) A opção `-D`
@@ -192,6 +193,21 @@ implementação (não apenas do exemplo em teste):
    portas de dados e de estado são registros de 8 bits independentes,
    **não** duas metades de um registro de 16 bits) — corrigido conforme a
    simplificação de portas de 8 bits descrita acima.
+3. (Encontrado mais tarde, ao construir um exemplo de multitarefa
+   preemptiva com paginação em `../bios_mancha/`, não durante a
+   validação original deste projeto) `cpu_interrompe` zerava `cs`/`ds`
+   para os valores fixos do quadro do vetor e ligava `S`/`I`/`D` em
+   `sr`, mas **não desligava o bit `P`** — se o que foi interrompido
+   estivesse com paginação ativa, o próprio atendimento da interrupção
+   (a partir do empilhamento do contexto, já dentro de
+   `cpu_interrompe`) continuava traduzindo endereços com `P=1` e `pt`
+   já resetado para `0`, lendo "entradas de tabela de páginas" de
+   dentro do vetor de interrupções. Nenhum exemplo deste projeto jamais
+   expôs isso (nem `paginacao.mob`, que só faz um `halt` direto, sem
+   passar pelo mecanismo de interrupção) — corrigido limpando `P` no
+   mesmo ponto onde `S`/`I`/`D` já eram ligados (ver
+   `../bios_mancha/README.md`, seção "Processos de usuário com
+   paginação real", para a análise completa e a correção exata).
 
 ## Organização do código
 
@@ -207,6 +223,14 @@ src/
                      por vez
   objeto.h/.c        leitura/escrita do formato de arquivo objeto (.mob)
   montador.c         montador (assembler): .asm -> .mob
+  mob2bin.c          converte um .mob já resolvido num binário achatado
+                       de N bytes -- útil quando um módulo é montado
+                       sozinho (contador de endereço começando em 0) só
+                       para gerar bytes prontos a serem gravados num
+                       setor de disco e carregados em tempo de execução
+                       (ver ../bios_mancha/README.md, "Carregando o
+                       código de um processo do disco, em tempo de
+                       execução")
   tela.h/.c          desenho da tela (curses)
   main.c             laço principal do simulador e comandos do operador
 exemplos/

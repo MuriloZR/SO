@@ -127,21 +127,21 @@ _f_main:
 	add sp, 2
 	ld r0, 0
 	st r0, (bp+-14)
-_L5176c05f_8:
+_L96244538_8:
 	ld r0, (bp+-14)
 	push r0
 	ld r0, 3
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L5176c05f_10
+	jmpc lt, _L96244538_10
 	ld r0, 0
-	jmp _L5176c05f_11
-_L5176c05f_10:
+	jmp _L96244538_11
+_L96244538_10:
 	ld r0, 1
-_L5176c05f_11:
+_L96244538_11:
 	cmp r0, 0
-	jmpc eq, _L5176c05f_9
+	jmpc eq, _L96244538_9
 	ld r0, _g_vetores
 	push r0
 	ld r0, (bp+-14)
@@ -179,25 +179,25 @@ _L5176c05f_11:
 	pop r0
 	add r0, r1
 	st r0, (bp+-14)
-	jmp _L5176c05f_8
-_L5176c05f_9:
+	jmp _L96244538_8
+_L96244538_9:
 	ld r0, 0
 	st r0, (bp+-14)
-_L5176c05f_12:
+_L96244538_12:
 	ld r0, (bp+-14)
 	push r0
 	ld r0, 3
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L5176c05f_14
+	jmpc lt, _L96244538_14
 	ld r0, 0
-	jmp _L5176c05f_15
-_L5176c05f_14:
+	jmp _L96244538_15
+_L96244538_14:
 	ld r0, 1
-_L5176c05f_15:
+_L96244538_15:
 	cmp r0, 0
-	jmpc eq, _L5176c05f_13
+	jmpc eq, _L96244538_13
 	ld r0, _g_vetores
 	push r0
 	ld r0, (bp+-14)
@@ -233,8 +233,8 @@ _L5176c05f_15:
 	pop r0
 	add r0, r1
 	st r0, (bp+-14)
-	jmp _L5176c05f_12
-_L5176c05f_13:
+	jmp _L96244538_12
+_L96244538_13:
 	ld r0, 10
 	push r0
 	call _f_putchar

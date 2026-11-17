@@ -23,12 +23,6 @@ int mancha_in(int porta);
 // que é como todo programa compilado pelo mcc roda)
 void mancha_halt(void);
 
-// minhas funções
-int retorna_clock_atual();
-int retorna_clock_max();
-void set_clock_max(int valor);
-
-
 // console (porta de dados 0001, porta de estado 0002, mancha.pdf tabela 17)
 int putchar(int c);      // escreve um caractere, devolve c
 int getchar(void);        // espera (ocupado) e lê um caractere

@@ -5,8 +5,8 @@
 # (seu exemplo exemplos/multitarefa_c/ tem um escalonador escrito em C,
 # compilado pelo mcc).
 
-.PHONY: all simulador_completo compilador_c bios_mancha T1 \
-        clean clean-simulador_completo clean-compilador_c clean-bios_mancha clean-T1
+.PHONY: all simulador_completo compilador_c bios_mancha T1 T2\
+        clean clean-simulador_completo clean-compilador_c clean-bios_mancha clean-T1 clean-T2
 
 all: simulador_completo compilador_c bios_mancha T1 T2
 

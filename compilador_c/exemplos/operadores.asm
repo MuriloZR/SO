@@ -105,19 +105,19 @@ _f_main:
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc gt, _L514ac05f_26
+	jmpc gt, _L96204538_26
 	ld r0, 0
-	jmp _L514ac05f_27
-_L514ac05f_26:
+	jmp _L96204538_27
+_L96204538_26:
 	ld r0, 1
-_L514ac05f_27:
+_L96204538_27:
 	cmp r0, 0
-	jmpc eq, _L514ac05f_24
+	jmpc eq, _L96204538_24
 	ld r0, (bp+-2)
-	jmp _L514ac05f_25
-_L514ac05f_24:
+	jmp _L96204538_25
+_L96204538_24:
 	ld r0, (bp+-4)
-_L514ac05f_25:
+_L96204538_25:
 	push r0
 	call _f_print_int
 	add sp, 2
@@ -131,33 +131,33 @@ _L514ac05f_25:
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L514ac05f_30
+	jmpc lt, _L96204538_30
 	ld r0, 0
-	jmp _L514ac05f_31
-_L514ac05f_30:
+	jmp _L96204538_31
+_L96204538_30:
 	ld r0, 1
-_L514ac05f_31:
+_L96204538_31:
 	cmp r0, 0
-	jmpc eq, _L514ac05f_29
+	jmpc eq, _L96204538_29
 	ld r0, (bp+-4)
 	push r0
 	ld r0, 0
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc gt, _L514ac05f_32
+	jmpc gt, _L96204538_32
 	ld r0, 0
-	jmp _L514ac05f_33
-_L514ac05f_32:
+	jmp _L96204538_33
+_L96204538_32:
 	ld r0, 1
-_L514ac05f_33:
+_L96204538_33:
 	cmp r0, 0
-	jmpc eq, _L514ac05f_29
+	jmpc eq, _L96204538_29
 	ld r0, 1
-	jmp _L514ac05f_28
-_L514ac05f_29:
+	jmp _L96204538_28
+_L96204538_29:
 	ld r0, 0
-_L514ac05f_28:
+_L96204538_28:
 	push r0
 	call _f_print_int
 	add sp, 2
@@ -171,33 +171,33 @@ _L514ac05f_28:
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L514ac05f_36
+	jmpc lt, _L96204538_36
 	ld r0, 0
-	jmp _L514ac05f_37
-_L514ac05f_36:
+	jmp _L96204538_37
+_L96204538_36:
 	ld r0, 1
-_L514ac05f_37:
+_L96204538_37:
 	cmp r0, 0
-	jmpc ne, _L514ac05f_35
+	jmpc ne, _L96204538_35
 	ld r0, (bp+-4)
 	push r0
 	ld r0, 0
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc gt, _L514ac05f_38
+	jmpc gt, _L96204538_38
 	ld r0, 0
-	jmp _L514ac05f_39
-_L514ac05f_38:
+	jmp _L96204538_39
+_L96204538_38:
 	ld r0, 1
-_L514ac05f_39:
+_L96204538_39:
 	cmp r0, 0
-	jmpc ne, _L514ac05f_35
+	jmpc ne, _L96204538_35
 	ld r0, 0
-	jmp _L514ac05f_34
-_L514ac05f_35:
+	jmp _L96204538_34
+_L96204538_35:
 	ld r0, 1
-_L514ac05f_34:
+_L96204538_34:
 	push r0
 	call _f_print_int
 	add sp, 2
@@ -207,21 +207,21 @@ _L514ac05f_34:
 	add sp, 2
 	ld r0, 0
 	st r0, (bp+-18)
-_L514ac05f_40:
+_L96204538_40:
 	ld r0, (bp+-18)
 	push r0
 	ld r0, 5
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L514ac05f_42
+	jmpc lt, _L96204538_42
 	ld r0, 0
-	jmp _L514ac05f_43
-_L514ac05f_42:
+	jmp _L96204538_43
+_L96204538_42:
 	ld r0, 1
-_L514ac05f_43:
+_L96204538_43:
 	cmp r0, 0
-	jmpc eq, _L514ac05f_41
+	jmpc eq, _L96204538_41
 	ld r0, bp
 	add r0, -14
 	push r0
@@ -245,28 +245,28 @@ _L514ac05f_43:
 	pop r0
 	add r0, r1
 	st r0, (bp+-18)
-	jmp _L514ac05f_40
-_L514ac05f_41:
+	jmp _L96204538_40
+_L96204538_41:
 	ld r0, bp
 	add r0, -14
 	st r0, (bp+-16)
 	ld r0, 0
 	st r0, (bp+-18)
-_L514ac05f_44:
+_L96204538_44:
 	ld r0, (bp+-18)
 	push r0
 	ld r0, 5
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L514ac05f_46
+	jmpc lt, _L96204538_46
 	ld r0, 0
-	jmp _L514ac05f_47
-_L514ac05f_46:
+	jmp _L96204538_47
+_L96204538_46:
 	ld r0, 1
-_L514ac05f_47:
+_L96204538_47:
 	cmp r0, 0
-	jmpc eq, _L514ac05f_45
+	jmpc eq, _L96204538_45
 	ld r0, (bp+-16)
 	ld r1, r0
 	ld r0, (r1)
@@ -289,8 +289,8 @@ _L514ac05f_47:
 	pop r0
 	add r0, r1
 	st r0, (bp+-18)
-	jmp _L514ac05f_44
-_L514ac05f_45:
+	jmp _L96204538_44
+_L96204538_45:
 	ld r0, 10
 	push r0
 	call _f_putchar
