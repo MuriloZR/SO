@@ -1,4 +1,4 @@
-#include "mancha.h"
+#include "../compilador_c/inc/mancha.h"
 
 void puts_sem_n(char *s) {
     while (*s != 0) {
@@ -20,7 +20,7 @@ int retorna_time() {
     return (mancha_in(0x0024) << 8) | mancha_in(0x0025);
 }
 
-int next = 0x001;
+int next = 0x0000;
 
 void srand(int seed) {
     next = seed;

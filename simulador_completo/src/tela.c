@@ -170,8 +170,8 @@ void tela_desenha(cpu_t *cpu, mem_t *mem, disp_t *disp,
   bool ocupado, erro_disco;
   int ticks;
   disp_estado_disco(disp, 0, &ocupado, &erro_disco, &ticks);
-  mvprintw(y, 1, "relogio: contador=%04X limite=%04X   time: %04X   disco0: %s%s   mascara interrupcoes=%02X",
-            disp_relogio_contador(disp), disp_relogio_limite(disp), disp_time_unit(disp),
+  mvprintw(y, 1, "relogio: contador=%04X limite=%04X  time: %04X  disco0: %s%s   mascara interrupcoes=%02X",
+            disp_relogio_contador(disp), disp_relogio_limite(disp), disp_time_device(disp),
             ocupado ? "ocupado" : "livre", erro_disco ? " (erro)" : "",
             disp_mascara_interrupcoes(disp));
   y += 2;

@@ -3,7 +3,7 @@
 
 CC = gcc
 CFLAGS = -Wall -Wextra -std=gnu11 -g -Isrc
-LDLIBS_SIM = -lcurses
+LDLIBS_SIM = -lncurses
 
 SRC = src
 BIN = bin

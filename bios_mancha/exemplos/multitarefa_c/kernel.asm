@@ -6,21 +6,21 @@ _f_atraso:
 	sub sp, 2
 	ld r0, 0
 	st r0, (bp+-2)
-_L97dc4538_4:
+_Ldc544927_4:
 	ld r0, (bp+-2)
 	push r0
 	ld r0, 600
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L97dc4538_6
+	jmpc lt, _Ldc544927_6
 	ld r0, 0
-	jmp _L97dc4538_7
-_L97dc4538_6:
+	jmp _Ldc544927_7
+_Ldc544927_6:
 	ld r0, 1
-_L97dc4538_7:
+_Ldc544927_7:
 	cmp r0, 0
-	jmpc eq, _L97dc4538_5
+	jmpc eq, _Ldc544927_5
 	ld r0, (bp+-2)
 	push r0
 	ld r0, 1
@@ -28,53 +28,53 @@ _L97dc4538_7:
 	pop r0
 	add r0, r1
 	st r0, (bp+-2)
-	jmp _L97dc4538_4
-_L97dc4538_5:
+	jmp _Ldc544927_4
+_Ldc544927_5:
 	ld sp, bp
 	pop bp
 	ret
 _f_processoA:
 	push bp
 	ld bp, sp
-_L97dc4538_11:
+_Ldc544927_11:
 	ld r0, 65
 	push r0
 	call _f_escreve_caractere
 	add sp, 2
 	call _f_atraso
-_L97dc4538_12:
-	jmp _L97dc4538_11
-_L97dc4538_13:
+_Ldc544927_12:
+	jmp _Ldc544927_11
+_Ldc544927_13:
 	ld sp, bp
 	pop bp
 	ret
 _f_processoB:
 	push bp
 	ld bp, sp
-_L97dc4538_17:
+_Ldc544927_17:
 	ld r0, 66
 	push r0
 	call _f_escreve_caractere
 	add sp, 2
 	call _f_atraso
-_L97dc4538_18:
-	jmp _L97dc4538_17
-_L97dc4538_19:
+_Ldc544927_18:
+	jmp _Ldc544927_17
+_Ldc544927_19:
 	ld sp, bp
 	pop bp
 	ret
 _f_processoC:
 	push bp
 	ld bp, sp
-_L97dc4538_23:
+_Ldc544927_23:
 	ld r0, 67
 	push r0
 	call _f_escreve_caractere
 	add sp, 2
 	call _f_atraso
-_L97dc4538_24:
-	jmp _L97dc4538_23
-_L97dc4538_25:
+_Ldc544927_24:
+	jmp _Ldc544927_23
+_Ldc544927_25:
 	ld sp, bp
 	pop bp
 	ret
@@ -161,52 +161,52 @@ _f_inicializa_processos:
 	sub sp, 2
 	ld r0, 0
 	st r0, (bp+-2)
-_L97dc4538_36:
+_Ldc544927_36:
 	ld r0, (bp+-2)
 	push r0
 	ld r0, 3
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L97dc4538_39
+	jmpc lt, _Ldc544927_39
 	ld r0, 0
-	jmp _L97dc4538_40
-_L97dc4538_39:
+	jmp _Ldc544927_40
+_Ldc544927_39:
 	ld r0, 1
-_L97dc4538_40:
+_Ldc544927_40:
 	cmp r0, 0
-	jmpc eq, _L97dc4538_38
+	jmpc eq, _Ldc544927_38
 	ld r0, (bp+-2)
 	push r0
 	call _f_monta_quadro_inicial
 	add sp, 2
-_L97dc4538_37:
+_Ldc544927_37:
 	ld r0, (bp+-2)
 	push r0
 	add r0, 1
 	st r0, (bp+-2)
 	pop r0
-	jmp _L97dc4538_36
-_L97dc4538_38:
+	jmp _Ldc544927_36
+_Ldc544927_38:
 	ld r0, 0
 	st r0, (_g_processo_atual)
 	ld r0, 0
 	st r0, (bp+-2)
-_L97dc4538_41:
+_Ldc544927_41:
 	ld r0, (bp+-2)
 	push r0
 	ld r0, 16
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L97dc4538_44
+	jmpc lt, _Ldc544927_44
 	ld r0, 0
-	jmp _L97dc4538_45
-_L97dc4538_44:
+	jmp _Ldc544927_45
+_Ldc544927_44:
 	ld r0, 1
-_L97dc4538_45:
+_Ldc544927_45:
 	cmp r0, 0
-	jmpc eq, _L97dc4538_43
+	jmpc eq, _Ldc544927_43
 	ld r0, (bp+4)
 	push r0
 	ld r0, (bp+-2)
@@ -223,14 +223,14 @@ _L97dc4538_45:
 	ld r0, (r1)
 	pop r1
 	st r0, (r1)
-_L97dc4538_42:
+_Ldc544927_42:
 	ld r0, (bp+-2)
 	push r0
 	add r0, 1
 	st r0, (bp+-2)
 	pop r0
-	jmp _L97dc4538_41
-_L97dc4538_43:
+	jmp _Ldc544927_41
+_Ldc544927_43:
 	ld sp, bp
 	pop bp
 	ret
@@ -251,21 +251,21 @@ _f_escalonador:
 	st r0, (bp+-6)
 	ld r0, 0
 	st r0, (bp+-4)
-_L97dc4538_57:
+_Ldc544927_57:
 	ld r0, (bp+-4)
 	push r0
 	ld r0, 16
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L97dc4538_59
+	jmpc lt, _Ldc544927_59
 	ld r0, 0
-	jmp _L97dc4538_60
-_L97dc4538_59:
+	jmp _Ldc544927_60
+_Ldc544927_59:
 	ld r0, 1
-_L97dc4538_60:
+_Ldc544927_60:
 	cmp r0, 0
-	jmpc eq, _L97dc4538_58
+	jmpc eq, _Ldc544927_58
 	ld r0, (bp+6)
 	push r0
 	ld r0, (bp+-6)
@@ -294,8 +294,8 @@ _L97dc4538_60:
 	pop r0
 	add r0, r1
 	st r0, (bp+-4)
-	jmp _L97dc4538_57
-_L97dc4538_58:
+	jmp _Ldc544927_57
+_Ldc544927_58:
 	ld r0, (bp+-2)
 	push r0
 	ld r0, 1
@@ -309,17 +309,17 @@ _L97dc4538_58:
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc ge, _L97dc4538_61
+	jmpc ge, _Ldc544927_61
 	ld r0, 0
-	jmp _L97dc4538_62
-_L97dc4538_61:
+	jmp _Ldc544927_62
+_Ldc544927_61:
 	ld r0, 1
-_L97dc4538_62:
+_Ldc544927_62:
 	cmp r0, 0
-	jmpc eq, _L97dc4538_63
+	jmpc eq, _Ldc544927_63
 	ld r0, 0
 	st r0, (bp+-2)
-_L97dc4538_63:
+_Ldc544927_63:
 	ld r0, (bp+8)
 	ld r1, r0
 	push r1
@@ -335,21 +335,21 @@ _L97dc4538_63:
 	st r0, (bp+-6)
 	ld r0, 0
 	st r0, (bp+-4)
-_L97dc4538_64:
+_Ldc544927_64:
 	ld r0, (bp+-4)
 	push r0
 	ld r0, 16
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L97dc4538_66
+	jmpc lt, _Ldc544927_66
 	ld r0, 0
-	jmp _L97dc4538_67
-_L97dc4538_66:
+	jmp _Ldc544927_67
+_Ldc544927_66:
 	ld r0, 1
-_L97dc4538_67:
+_Ldc544927_67:
 	cmp r0, 0
-	jmpc eq, _L97dc4538_65
+	jmpc eq, _Ldc544927_65
 	ld r0, (bp+4)
 	push r0
 	ld r0, (bp+-4)
@@ -378,8 +378,8 @@ _L97dc4538_67:
 	pop r0
 	add r0, r1
 	st r0, (bp+-4)
-	jmp _L97dc4538_64
-_L97dc4538_65:
+	jmp _Ldc544927_64
+_Ldc544927_65:
 	ld sp, bp
 	pop bp
 	ret

@@ -6,29 +6,29 @@ _f_main:
 	sub sp, 2
 	call _f_getchar
 	st r0, (bp+-2)
-_L96284538_4:
+_Ldc414927_4:
 	ld r0, (bp+-2)
 	push r0
 	ld r0, 10
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc ne, _L96284538_6
+	jmpc ne, _Ldc414927_6
 	ld r0, 0
-	jmp _L96284538_7
-_L96284538_6:
+	jmp _Ldc414927_7
+_Ldc414927_6:
 	ld r0, 1
-_L96284538_7:
+_Ldc414927_7:
 	cmp r0, 0
-	jmpc eq, _L96284538_5
+	jmpc eq, _Ldc414927_5
 	ld r0, (bp+-2)
 	push r0
 	call _f_putchar
 	add sp, 2
 	call _f_getchar
 	st r0, (bp+-2)
-	jmp _L96284538_4
-_L96284538_5:
+	jmp _Ldc414927_4
+_Ldc414927_5:
 	ld r0, 33
 	push r0
 	call _f_putchar

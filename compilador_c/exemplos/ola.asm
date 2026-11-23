@@ -3,7 +3,7 @@
 _f_main:
 	push bp
 	ld bp, sp
-	ld r0, _str962e4538_1
+	ld r0, _strdc4b4927_1
 	push r0
 	call _f_puts
 	add sp, 2
@@ -44,7 +44,7 @@ _f_main:
 .data
 
 ; ----- literais de string -----
-_str962e4538_0:
+_strdc4b4927_0:
 	.db 79, 108, 97, 44, 32, 77, 97, 110, 99, 104, 97, 33, 0
-_str962e4538_1:
+_strdc4b4927_1:
 	.db 79, 108, 97, 44, 32, 77, 97, 110, 99, 104, 97, 33, 0

@@ -3,7 +3,7 @@
 _f_puts_sem_n:
 	push bp
 	ld bp, sp
-_L517bc05f_4:
+_Ldc734927_4:
 	ld r0, (bp+4)
 	ld r1, r0
 	ldb r0, (r1)
@@ -13,14 +13,14 @@ _L517bc05f_4:
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc ne, _L517bc05f_6
+	jmpc ne, _Ldc734927_6
 	ld r0, 0
-	jmp _L517bc05f_7
-_L517bc05f_6:
+	jmp _Ldc734927_7
+_Ldc734927_6:
 	ld r0, 1
-_L517bc05f_7:
+_Ldc734927_7:
 	cmp r0, 0
-	jmpc eq, _L517bc05f_5
+	jmpc eq, _Ldc734927_5
 	ld r0, (bp+4)
 	ld r1, r0
 	ldb r0, (r1)
@@ -35,8 +35,8 @@ _L517bc05f_7:
 	pop r0
 	add r0, r1
 	st r0, (bp+4)
-	jmp _L517bc05f_4
-_L517bc05f_5:
+	jmp _Ldc734927_4
+_Ldc734927_5:
 	ld sp, bp
 	pop bp
 	ret
@@ -164,22 +164,22 @@ _f_main:
 	add sp, 2
 	ld r0, 0
 	st r0, (bp+-2)
-_L517bc05f_13:
+_Ldc734927_13:
 	ld r0, (bp+-2)
 	push r0
 	ld r0, 1
 	ld r1, r0
 	pop r0
 	cmp r0, r1
-	jmpc lt, _L517bc05f_16
+	jmpc lt, _Ldc734927_16
 	ld r0, 0
-	jmp _L517bc05f_17
-_L517bc05f_16:
+	jmp _Ldc734927_17
+_Ldc734927_16:
 	ld r0, 1
-_L517bc05f_17:
+_Ldc734927_17:
 	cmp r0, 0
-	jmpc eq, _L517bc05f_15
-	ld r0, _str517bc05f_1
+	jmpc eq, _Ldc734927_15
+	ld r0, _strdc734927_1
 	push r0
 	call _f_puts_sem_n
 	add sp, 2
@@ -191,14 +191,14 @@ _L517bc05f_17:
 	push r0
 	call _f_putchar
 	add sp, 2
-_L517bc05f_14:
+_Ldc734927_14:
 	ld r0, (bp+-2)
 	push r0
 	add r0, 1
 	st r0, (bp+-2)
 	pop r0
-	jmp _L517bc05f_13
-_L517bc05f_15:
+	jmp _Ldc734927_13
+_Ldc734927_15:
 	ld r0, 0
 	ld sp, bp
 	pop bp
@@ -209,10 +209,10 @@ _L517bc05f_15:
 
 .data
 _g_next:
-	.dw 1
+	.dw 0
 
 ; ----- literais de string -----
-_str517bc05f_0:
+_strdc734927_0:
 	.db 114, 97, 110, 100, 58, 32, 0
-_str517bc05f_1:
+_strdc734927_1:
 	.db 114, 97, 110, 100, 58, 32, 0
