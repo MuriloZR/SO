@@ -4,3 +4,14 @@ bin/
 *.mob
 *.o
 compile_commands.json
+*.bin
+disco.img
+
+# código gerado pelo mcc a partir de .c -- não é fonte, é saída de build
+compilador_c/exemplos/*.asm
+compilador_c/rt/biblioteca.asm
+bios_mancha/exemplos/multitarefa_c/kernel.asm
+bios_mancha/exemplos/paginacao_usuario_c/kernel.asm
+bios_mancha/exemplos/paginacao_disco_c/kernel.asm
+bios_mancha/exemplos/paginacao_disco_c/processoA.asm
+bios_mancha/exemplos/paginacao_disco_c/processoB.asm
