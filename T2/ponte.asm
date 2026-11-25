@@ -33,7 +33,7 @@ _kernel_inicio:
         add     sp, -32                ; sp agora aponta para o começo do quadro de 16 palavras
         rete                           ; desempilha o quadro que começa em pilha_sistema para iniciar o primeiro processo
 
-_f_KERNEL_CRIA_PROC:
+_f_cria_proc:
     push  bp
     ld    bp, sp
     ld    r0, KERNEL_CRIA_PROC
@@ -49,7 +49,7 @@ _trampolim_cria_proc:
     add   sp, 2
     ret
 
-_f_KERNEL_MATA_PROC:
+_f_mata_proc:
     push  bp
     ld    bp, sp
     ld    r0, KERNEL_MATA_PROC
@@ -60,9 +60,12 @@ _f_KERNEL_MATA_PROC:
     ret
 
 _trampolim_mata_proc:
-    push  r1
+    ld    bp, sp
+    add   bp, 2
+    push  bp    ; quadro
+    push  r1    ; pid
     call  _f_kernel_mata_proc
-    add   sp, 2
+    add   sp, 4
     ret
 
 so_escalona_trampolim:

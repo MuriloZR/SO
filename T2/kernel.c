@@ -33,13 +33,13 @@ int inicializa_processos(int *quadro);
 
 // chamadas
 int kernel_cria_proc(void (*entry)(void));
-int kernel_mata_proc(int pid);
+int kernel_mata_proc(int pid, int *quadro);
 
 
 // retorna o primeiro índice livre da tabela de processos
 int idx_livre_tabela(void) {
     for (int i = 0; i < NUM_PROCESSOS; i++) {
-        if (tabela_processos[i].pid == 0) {
+        if (tabela_processos[i].pid == 0 || tabela_processos[i].estado == LIVRE) {
             return i;
         }
     }
@@ -77,25 +77,44 @@ int kernel_cria_proc(void (*entry)(void)) {
     return pid;
 }
 
-// ainda não tá correta
-int kernel_mata_proc(int pid) {
+int libera_entrada(int idx_morto) {
+    int pid_morto = tabela_processos[idx_morto].pid;
+    tabela_processos[idx_morto].pid = 0;
+    tabela_processos[idx_morto].estado = LIVRE;
+    return pid_morto;
+}
+
+int proc_morre(int *quadro) {
+    int idx_morto = processo_execucao;
+    processo_execucao = -1;
+    libera_entrada(idx_morto);
+    so_escalona(quadro);
+    return quadro[0];
+}
+
+int proc_mata(int pid) {
     int idx_morto = -1;
-    if (pid < 1) { return idx_morto; }
     for (int i = 0; i < NUM_PROCESSOS; i++) {
         if (tabela_processos[i].pid == pid) {
             idx_morto = i;
             break;
         }
     }
-    if (idx_morto < 0) { return idx_morto; }
-
-    if (tabela_processos[idx_morto].estado == EXECUCAO) {
-        processo_execucao = -1;
-    }
-    int pid_morto = tabela_processos[idx_morto].pid;
-    tabela_processos[idx_morto].pid = 0;
-    tabela_processos[idx_morto].estado = LIVRE;
+    if (idx_morto < 0) { return -1; }
+    int pid_morto = libera_entrada(idx_morto);
     return pid_morto;
+}
+
+int kernel_mata_proc(int pid, int *quadro) {
+    if (pid < 1) { return -1; }
+    int ret = 0;
+    // o handler assume que processo_execucao >= 0
+    if (pid == tabela_processos[processo_execucao].pid) {
+        ret = proc_morre(quadro);
+    } else {
+        ret = proc_mata(pid);
+    }
+    return ret;
 }
 
 void salva_contexto(int idx_tabela, int *quadro) {
@@ -112,6 +131,7 @@ void restaura_contexto(int idx_tabela, int *quadro) {
     }
 }
 
+// falta tratar o caso do idle
 void escolhe_proximo(void) {
     if (processo_execucao >= 0) {
         for (int i = 0; i < NUM_PROCESSOS; i++) {
