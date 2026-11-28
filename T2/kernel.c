@@ -1,3 +1,5 @@
+#include "mstdlib.h"
+
 #define NUM_PROCESSOS 8
 #define TAM_QUADRO  16
 
@@ -43,10 +45,11 @@ int kernel_escreve(int c);
 
 int escreve_caractere(int c); // definida no ponte.asm
 
-// retorna o primeiro índice livre da tabela de processos
+// retorna o primeiro índice [0, NUM_PROCESSOS) livre da tabela de processos
+// se nenhum estiver livre retorna -1
 int idx_livre_tabela(void) {
     for (int i = 0; i < NUM_PROCESSOS; i++) {
-        if (tabela_processos[i].pid == 0 || tabela_processos[i].estado == LIVRE) {
+        if (tabela_processos[i].estado == LIVRE) {
             return i;
         }
     }
@@ -54,12 +57,15 @@ int idx_livre_tabela(void) {
     return -1;
 }
 
+// gera um pid para um processo
+// sempre começa em 1
 int pid_gen(void) {
     int prev_pid = next_pid;
     next_pid++;
     return prev_pid;
 }
 
+// limpa o quadro anterior e monta o do processo @pid na entrada @idx_tabela
 int monta_quadro_inicial(int idx_tabela, int pid, int sp, int ip) {
     if (pid < 1 || idx_tabela < 0 || idx_tabela >= NUM_PROCESSOS) { return -1; }
     tabela_processos[idx_tabela].pid = pid;
@@ -67,7 +73,7 @@ int monta_quadro_inicial(int idx_tabela, int pid, int sp, int ip) {
     tabela_processos[idx_tabela].estado = PRONTO;
     tabela_processos[idx_tabela].quadro[REG_SP] = sp;
     tabela_processos[idx_tabela].quadro[REG_IP] = ip;
-    tabela_processos[idx_tabela].quadro[REG_SR] = 0x0000;
+    tabela_processos[idx_tabela].quadro[REG_SR] = 0x0000; // já habilita as interrupções
 
     return 0;
 }
@@ -84,6 +90,7 @@ int kernel_cria_proc(void (*entry)(void)) {
     return pid;
 }
 
+// marca uma entrada da tabela de processos como livre
 int libera_entrada(int idx_morto) {
     int pid_morto = tabela_processos[idx_morto].pid;
     tabela_processos[idx_morto].pid = 0;
@@ -91,6 +98,7 @@ int libera_entrada(int idx_morto) {
     return pid_morto;
 }
 
+// quando um processo faz a chamada de matar o processo nele mesmo
 int proc_morre(int *quadro) {
     int idx_morto = processo_execucao;
     processo_execucao = -1;
@@ -99,6 +107,7 @@ int proc_morre(int *quadro) {
     return quadro[0];
 }
 
+// quando um processo faz a chamada de matar processo em um outro
 int proc_mata(int pid) {
     int idx_morto = -1;
     for (int i = 0; i < NUM_PROCESSOS; i++) {
@@ -112,12 +121,13 @@ int proc_mata(int pid) {
     return pid_morto;
 }
 
-// cuidar a parte de encerrar o sistema quando ocorrer exceção
+// TODO: cuidar a parte de encerrar o sistema quando ocorrer exceção
 int kernel_mata_proc(int pid, int *quadro) {
     if (pid < 1) { return -1; }
-    if (pid == PID_INIT) { encerra_processos(); return PID_INIT; }
+    if (pid == PID_INIT) { encerra_processos(); return PID_INIT; } // encerra e execução se tentar matar o init
     int ret = 0;
     // o handler assume que processo_execucao >= 0
+    // pois algum processo precisa estar exeutando pra fazer uma chamada
     if (pid == tabela_processos[processo_execucao].pid) {
         ret = proc_morre(quadro);
     } else {
@@ -126,6 +136,7 @@ int kernel_mata_proc(int pid, int *quadro) {
     return ret;
 }
 
+// salva o contexto do processo em execução em uma entrada da tabela
 void salva_contexto(int idx_tabela, int *quadro) {
     if (idx_tabela < 0) { return; }
     for (int i = 0; i < TAM_QUADRO; i++) {
@@ -133,6 +144,7 @@ void salva_contexto(int idx_tabela, int *quadro) {
     }
 }
 
+// restaura o contexto de uma entrada da tabela pra ser executado novamentes
 void restaura_contexto(int idx_tabela, int *quadro) {
     if (idx_tabela < 0) { return; }
     for (int i = 0; i < TAM_QUADRO; i++) {
@@ -140,7 +152,7 @@ void restaura_contexto(int idx_tabela, int *quadro) {
     }
 }
 
-// falta tratar o caso do idle
+// TODO: tratar o caso do idle
 void escolhe_proximo(void) {
     if (processo_execucao >= 0) {
         for (int i = 0; i < NUM_PROCESSOS; i++) {
@@ -179,13 +191,10 @@ void so_escalona(int *quadro) {
     restaura_contexto(processo_execucao, quadro);  // tem verificação para o proc_exe == -1
 }
 
+// se o processo retorna dá problema
 void proc2() {
     for (;;) {}
 }
-
-int cria_proc(void (*entry)(void));
-int mata_proc(int pid);
-void escreve(int c);
 
 void init() {
     if (cria_proc(proc2) == 2) {
@@ -194,6 +203,16 @@ void init() {
         escreve('X');
     }
     if (mata_proc(2) == 2) {
+        escreve('0');
+    } else {
+        escreve('X');
+    }
+    if (cria_proc(proc2) == 3) {
+        escreve('0');
+    } else {
+        escreve('X');
+    }
+    if (mata_proc(3) == 3) {
         escreve('0');
     } else {
         escreve('X');
@@ -208,6 +227,8 @@ int inicializa_processos(int *quadro) {
     return 0;
 }
 
+// ainda não tem metricas reais, então a unica coisa
+// printada é "FIM"
 void print_metricas(void) {
     char s[4];
     s[0] = 'F';
@@ -221,9 +242,12 @@ void print_metricas(void) {
     kernel_escreve('\n');
 }
 
+// mata todos os processos e para a cpu
 void encerra_processos(void) {
     for (int i = 0; i < NUM_PROCESSOS; i++) {
-        libera_entrada(i); //lembrar de verificar apenas as entradas válidas
+        if (tabela_processos[i].estado != LIVRE) {
+            libera_entrada(i);
+        }
     }
     print_metricas();
     cpu_halt();
