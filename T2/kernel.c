@@ -1,5 +1,8 @@
 #define NUM_PROCESSOS 8
 #define TAM_QUADRO  16
+
+#define PID_INIT 1
+
 #define LIVRE       0
 #define EXECUCAO    1
 #define PRONTO      2
@@ -30,11 +33,15 @@ void salva_contexto(int idx_tabela, int *quadro);
 void restaura_contexto(int idx_tabela, int *quadro);
 void so_escalona(int *quadro);
 int inicializa_processos(int *quadro);
+void encerra_processos(void);
+void cpu_halt(void);
 
 // chamadas
 int kernel_cria_proc(void (*entry)(void));
 int kernel_mata_proc(int pid, int *quadro);
+int kernel_escreve(int c);
 
+int escreve_caractere(int c); // definida no ponte.asm
 
 // retorna o primeiro índice livre da tabela de processos
 int idx_livre_tabela(void) {
@@ -105,8 +112,10 @@ int proc_mata(int pid) {
     return pid_morto;
 }
 
+// cuidar a parte de encerrar o sistema quando ocorrer exceção
 int kernel_mata_proc(int pid, int *quadro) {
     if (pid < 1) { return -1; }
+    if (pid == PID_INIT) { encerra_processos(); return PID_INIT; }
     int ret = 0;
     // o handler assume que processo_execucao >= 0
     if (pid == tabela_processos[processo_execucao].pid) {
@@ -174,14 +183,54 @@ void proc2() {
     for (;;) {}
 }
 
+int cria_proc(void (*entry)(void));
+int mata_proc(int pid);
+void escreve(int c);
+
 void init() {
-    kernel_cria_proc(proc2);
-    for (;;) {}
+    if (cria_proc(proc2) == 2) {
+        escreve('0');
+    } else {
+        escreve('X');
+    }
+    if (mata_proc(2) == 2) {
+        escreve('0');
+    } else {
+        escreve('X');
+    }
+    mata_proc(PID_INIT);
 }
 
 int inicializa_processos(int *quadro) {
     int pid = kernel_cria_proc(init);
-    if (pid < 0) { return -1; }
+    if (pid != PID_INIT) { return -1; }
     so_escalona(quadro);
     return 0;
+}
+
+void print_metricas(void) {
+    char s[4];
+    s[0] = 'F';
+    s[1] = 'I';
+    s[2] = 'M';
+    s[3] = '\0';
+    kernel_escreve('\n');
+    for (int i = 0; i < 4; i++) {
+        kernel_escreve(s[i]);
+    }
+    kernel_escreve('\n');
+}
+
+void encerra_processos(void) {
+    for (int i = 0; i < NUM_PROCESSOS; i++) {
+        libera_entrada(i); //lembrar de verificar apenas as entradas válidas
+    }
+    print_metricas();
+    cpu_halt();
+}
+
+int kernel_escreve(int c) {
+    if (c == '\0') return 0;
+      escreve_caractere(c);
+      return 1;
 }

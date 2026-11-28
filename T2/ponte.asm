@@ -1,6 +1,7 @@
         .equ    TICKS_POR_FATIA = 4000
         .equ    KERNEL_CRIA_PROC = 0 ; Código Syscall KERNEL_CRIA_PROC
         .equ    KERNEL_MATA_PROC = 1 ; Código da Syscall KERNEL_MATA_PROC
+        .equ    KERNEL_ESCREVE   = 2 ; Código da Syscall KERNEL_MATA_PROC
 
 _kernel_inicio:
         ; programa o relógio (só dá pra fazer com "outb", que C não tem)
@@ -14,11 +15,14 @@ _kernel_inicio:
         ld      r0, 5               ; 5 = 0b0101 -> bit 0 e bit 2 são 1
         outb    r0, (0x30)          ; escreve os bits na porta 0x30
 
-        ld    r0, _trampolim_cria_proc ; carrega o endereço da chamada cria_proc em r0
-        st    r0, (tabela_syscalls)    ; põe o endereço da chamada no "idx" 0 da tabela de chamadas
+        ld    r0, _trampolim_cria_proc   ; carrega o endereço da chamada cria_proc em r0
+        st    r0, (tabela_syscalls)      ; põe o endereço da chamada no "idx" 0 da tabela de chamadas
 
-        ld    r0, _trampolim_mata_proc ; carrega o endereço da chamada mata_proc em r0
+        ld    r0, _trampolim_mata_proc   ; carrega o endereço da chamada mata_proc em r0
         st    r0, (tabela_syscalls+2)    ; põe o endereço da chamada no "idx" 1 da tabela de chamadas
+
+        ld    r0, _trampolim_escreve     ; carrega o endereço da chamada escreve em r0
+        st    r0, (tabela_syscalls+4)    ; põe o endereço da chamada no "idx" 2 da tabela de chamadas
 
         ld    r0, so_escalona_trampolim  ; carrega o endereço de so_escalona_trampolim em r0
         st    r0, (retomada_escalonador) ; põe o endereço de so_escalona_trampolim em retomada_escalonador
@@ -33,10 +37,13 @@ _kernel_inicio:
         add     sp, -32                ; sp agora aponta para o começo do quadro de 16 palavras
         rete                           ; desempilha o quadro que começa em pilha_sistema para iniciar o primeiro processo
 
+; ============================
+; Chamada 0: KERNEL_CRIA_PROC
+; ============================
 _f_cria_proc:
     push  bp
     ld    bp, sp
-    ld    r0, KERNEL_CRIA_PROC
+    ld    r0, KERNEL_CRIA_PROC    ; carrega o valor da Syscall pra bios chamar
     ld    r1, (bp+4)              ; Parâmetro: ponteiro do programa
     trap  7
     ld    sp, bp
@@ -49,10 +56,13 @@ _trampolim_cria_proc:
     add   sp, 2
     ret
 
+; ============================
+; Chamada 1: KERNEL_MATA_PROC
+; ============================
 _f_mata_proc:
     push  bp
     ld    bp, sp
-    ld    r0, KERNEL_MATA_PROC
+    ld    r0, KERNEL_MATA_PROC    ; carrega o valor da Syscall pra bios chamar
     ld    r1, (bp+4)              ; Parâmetro: pid do processo a ser morto
     trap  7
     ld    sp, bp
@@ -68,9 +78,49 @@ _trampolim_mata_proc:
     add   sp, 4
     ret
 
+; ============================
+; Chamada 2: KERNEL_ESCREVE
+; ============================
+_f_escreve:
+    push  bp
+    ld    bp, sp
+    ld    r0, KERNEL_ESCREVE     ; carrega o valor da Syscall pra bios chamar
+    ld    r1, (bp+4)             ; Parâmetro: char a ser escrito
+    trap  7
+    ld    sp, bp
+    pop   bp
+    ret
+
+_trampolim_escreve:
+    push  r1    ; char
+    call  _f_kernel_escreve
+    add   sp, 2
+    ret
+
+; ============================
+; TRAMPOLIM DO ESCALONADOR
+; ============================
 so_escalona_trampolim:
         ld      r1, sp
         push    r1
         call    _f_so_escalona
         add sp, 2
         rete
+
+; ============================
+; PARADA DO SISTEMA
+; ============================
+_f_cpu_halt:
+    halt
+
+; ============================
+; AUXILIAR DE ESCRITA
+; ============================
+_f_escreve_caractere:
+        push    bp
+        ld      bp, sp
+        ld      r0, (bp+4)
+        outb    r0, (1)
+        ld      sp, bp
+        pop     bp
+        ret
